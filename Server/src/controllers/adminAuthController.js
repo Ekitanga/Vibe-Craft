@@ -31,6 +31,24 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
+const listAdmins = asyncHandler(async (_req, res) => {
+  const admins = await adminAuthService.listAdminUsers();
+
+  res.status(200).json({
+    success: true,
+    data: admins,
+  });
+});
+
+const inviteAdmin = asyncHandler(async (req, res) => {
+  const admin = await adminAuthService.inviteAdminUser(req.body || {});
+
+  res.status(201).json({
+    success: true,
+    data: admin,
+  });
+});
+
 const logout = asyncHandler(async (req, res) => {
   await adminAuthService.destroyAdminSession(getAdminSessionToken(req));
 
@@ -42,6 +60,8 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  inviteAdmin,
+  listAdmins,
   login,
   logout,
   me,

@@ -53,6 +53,25 @@ const createAdminUser = async ({ email, password, name }) => {
   return toAdmin(result.rows[0]);
 };
 
+const listAdminUsers = async () => {
+  const result = await db.query(
+    `SELECT id, email, name, role, created_at, updated_at FROM admin_users ORDER BY created_at ASC`
+  );
+
+  return result.rows.map(toAdmin);
+};
+
+const inviteAdminUser = async ({ email, password, name }) => {
+  const normalizedEmail = normalizeEmail(email);
+  const existing = await db.query("SELECT id FROM admin_users WHERE email = $1", [normalizedEmail]);
+
+  if (existing.rows[0]) {
+    throw new HttpError(409, "An admin with that email already exists.");
+  }
+
+  return createAdminUser({ email, password, name });
+};
+
 const authenticateAdmin = async ({ email, password }) => {
   const normalizedEmail = normalizeEmail(email);
 
@@ -136,4 +155,6 @@ module.exports = {
   createAdminUser,
   destroyAdminSession,
   getAdminBySessionToken,
+  inviteAdminUser,
+  listAdminUsers,
 };

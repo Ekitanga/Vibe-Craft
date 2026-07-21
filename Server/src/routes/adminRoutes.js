@@ -24,4 +24,7 @@ router.post("/uploads", uploadImages, uploadController.uploadImages);
 router.get("/orders", orderController.listOrders);
 router.patch("/orders/:id/status", orderController.updateOrderStatus);
 
+router.get("/admins", adminAuthController.listAdmins);
+router.post("/admins", adminAuthController.inviteAdmin);
+
 module.exports = router;
