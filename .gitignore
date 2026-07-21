@@ -1,0 +1,9 @@
+node_modules/
+Server/node_modules/
+Server/data/*.sqlite
+Server/data/*.sqlite-*
+Server/data/*.log
+Server/uploads/*
+!Server/uploads/.gitkeep
+.claude/settings.local.json
+Client-backup-*/

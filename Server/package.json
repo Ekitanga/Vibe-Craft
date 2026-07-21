@@ -1,0 +1,36 @@
+{
+  "name": "vibecraft-server",
+  "version": "1.0.0",
+  "description": "Express API for the Vibecraft projector shop.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/db/postgres.js && node --check src/db/init.js && node --check src/db/init-postgres.js && node --check src/db/create-admin.js && node --check src/services/adminAuthService.js && node --check src/services/customerAuthService.js && node --check src/controllers/adminAuthController.js && node --check src/controllers/customerAuthController.js && node --check src/middleware/adminAuth.js && node --check src/middleware/customerAuth.js && node --check src/routes/authRoutes.js && node --check src/utils/cookies.js && node --check src/utils/authSecurity.js",
+    "db:init": "node --no-warnings src/db/init.js",
+    "db:reset": "node --no-warnings src/db/init.js --reset",
+    "db:pg:init": "node src/db/init-postgres.js",
+    "db:pg:reset": "node src/db/init-postgres.js --reset",
+    "admin:create": "node src/db/create-admin.js"
+  },
+  "keywords": [
+    "express",
+    "ecommerce",
+    "projectors"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-auth-library": "^10.9.0",
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

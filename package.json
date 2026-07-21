@@ -1,0 +1,16 @@
+{
+  "name": "vibecraft",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root runner for the Vibecraft app.",
+  "scripts": {
+    "start": "npm --prefix Server start",
+    "dev": "npm --prefix Server run dev",
+    "check": "npm --prefix Server run check",
+    "db:init": "npm --prefix Server run db:init",
+    "db:reset": "npm --prefix Server run db:reset",
+    "db:pg:init": "npm --prefix Server run db:pg:init",
+    "db:pg:reset": "npm --prefix Server run db:pg:reset",
+    "admin:create": "npm --prefix Server run admin:create --"
+  }
+}

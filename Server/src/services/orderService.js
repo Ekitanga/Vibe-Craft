@@ -1,0 +1,299 @@
+const crypto = require("crypto");
+const db = require("../db/postgres");
+const HttpError = require("../utils/httpError");
+const { getProductById } = require("./productService");
+
+const allowedStatuses = ["pending", "confirmed", "processing", "completed", "cancelled"];
+
+const mapOrderRow = (row) => ({
+  id: row.id,
+  customer: {
+    id: row.customer_id,
+    name: row.customer_name,
+    phone: row.customer_phone,
+    email: row.customer_email,
+    location: row.customer_location,
+  },
+  items: [],
+  notes: row.notes || "",
+  status: row.status,
+  total: Number(row.total || 0),
+  currency: row.currency,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  inquiryAnswers: [],
+  recommendations: [],
+});
+
+const validateCustomer = (customer = {}) => {
+  const missingFields = ["name", "phone"].filter((field) => !customer[field]);
+
+  if (missingFields.length > 0) {
+    throw new HttpError(400, "Missing required customer fields", missingFields);
+  }
+};
+
+const normalizeItems = async (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new HttpError(400, "Order must include at least one item");
+  }
+
+  const normalizedItems = [];
+
+  for (const item of items) {
+    const product = await getProductById(item.productId);
+    const quantity = Number(item.quantity || 1);
+
+    if (quantity < 1) {
+      throw new HttpError(400, "Order item quantity must be at least 1");
+    }
+
+    if (product.stock < quantity) {
+      throw new HttpError(400, `${product.name} has only ${product.stock} item(s) in stock`);
+    }
+
+    normalizedItems.push({
+      productId: product.id,
+      name: product.name,
+      quantity,
+      unitPrice: product.price,
+      lineTotal: product.price * quantity,
+    });
+  }
+
+  return normalizedItems;
+};
+
+const hydrateOrderDetails = async (orders) => {
+  const ids = orders.map((order) => order.id);
+  const byId = new Map(
+    orders.map((order) => {
+      return [order.id, order];
+    })
+  );
+
+  if (!ids.length) {
+    return orders;
+  }
+
+  const [itemsResult, answersResult, recommendationsResult] = await Promise.all([
+    db.query(
+      `SELECT order_id, product_id, product_name, quantity, unit_price, line_total
+       FROM order_items
+       WHERE order_id = ANY($1::text[])
+       ORDER BY id ASC`,
+      [ids]
+    ),
+    db.query(
+      `SELECT order_id, question_key, question_label, answer_value, answer_label
+       FROM inquiry_answers
+       WHERE order_id = ANY($1::text[])
+       ORDER BY sort_order ASC, id ASC`,
+      [ids]
+    ),
+    db.query(
+      `SELECT order_id, product_id, product_name
+       FROM order_recommendations
+       WHERE order_id = ANY($1::text[])
+       ORDER BY sort_order ASC, id ASC`,
+      [ids]
+    ),
+  ]);
+
+  itemsResult.rows.forEach((row) => {
+    byId.get(row.order_id)?.items.push({
+      productId: row.product_id,
+      name: row.product_name,
+      quantity: Number(row.quantity || 0),
+      unitPrice: Number(row.unit_price || 0),
+      lineTotal: Number(row.line_total || 0),
+    });
+  });
+
+  answersResult.rows.forEach((row) => {
+    byId.get(row.order_id)?.inquiryAnswers.push({
+      questionKey: row.question_key,
+      questionLabel: row.question_label,
+      answerValue: row.answer_value,
+      answerLabel: row.answer_label,
+    });
+  });
+
+  recommendationsResult.rows.forEach((row) => {
+    byId.get(row.order_id)?.recommendations.push({
+      productId: row.product_id,
+      productName: row.product_name,
+    });
+  });
+
+  return orders;
+};
+
+const listOrders = async () => {
+  const result = await db.query(
+    `SELECT
+      o.id,
+      o.customer_id,
+      o.notes,
+      o.status,
+      o.total,
+      o.currency,
+      o.created_at,
+      o.updated_at,
+      c.name AS customer_name,
+      c.phone AS customer_phone,
+      c.email AS customer_email,
+      c.location AS customer_location
+    FROM orders o
+    JOIN customers c ON c.id = o.customer_id
+    ORDER BY o.created_at DESC`
+  );
+  const orders = result.rows.map(mapOrderRow);
+
+  return hydrateOrderDetails(orders);
+};
+
+const getOrderById = async (id) => {
+  const result = await db.query(
+    `SELECT
+      o.id,
+      o.customer_id,
+      o.notes,
+      o.status,
+      o.total,
+      o.currency,
+      o.created_at,
+      o.updated_at,
+      c.name AS customer_name,
+      c.phone AS customer_phone,
+      c.email AS customer_email,
+      c.location AS customer_location
+    FROM orders o
+    JOIN customers c ON c.id = o.customer_id
+    WHERE o.id = $1`,
+    [id]
+  );
+
+  if (!result.rows[0]) {
+    throw new HttpError(404, "Order not found");
+  }
+
+  const orders = await hydrateOrderDetails([mapOrderRow(result.rows[0])]);
+
+  return orders[0];
+};
+
+const createOrder = async (payload) => {
+  validateCustomer(payload.customer);
+
+  const items = await normalizeItems(payload.items);
+  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const customerId = crypto.randomUUID();
+  const orderId = crypto.randomUUID();
+
+  await db.withTransaction(async (client) => {
+    await client.query(
+      `INSERT INTO customers (id, name, phone, email, location)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        customerId,
+        payload.customer.name,
+        payload.customer.phone,
+        payload.customer.email || null,
+        payload.customer.location || null,
+      ]
+    );
+
+    await client.query(
+      `INSERT INTO orders (id, customer_id, notes, status, total, currency)
+       VALUES ($1, $2, $3, 'pending', $4, 'KES')`,
+      [orderId, customerId, payload.notes || "", total]
+    );
+
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO order_items (
+          id,
+          order_id,
+          product_id,
+          product_name,
+          quantity,
+          unit_price,
+          line_total
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [crypto.randomUUID(), orderId, item.productId, item.name, item.quantity, item.unitPrice, item.lineTotal]
+      );
+    }
+
+    if (Array.isArray(payload.inquiryAnswers)) {
+      for (const [index, answer] of payload.inquiryAnswers.entries()) {
+        await client.query(
+          `INSERT INTO inquiry_answers (
+            id,
+            order_id,
+            question_key,
+            question_label,
+            answer_value,
+            answer_label,
+            sort_order
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            crypto.randomUUID(),
+            orderId,
+            answer.questionKey || answer.key || "",
+            answer.questionLabel || answer.label || "",
+            answer.answerValue || answer.value || null,
+            answer.answerLabel || answer.answer || null,
+            index,
+          ]
+        );
+      }
+    }
+
+    if (Array.isArray(payload.recommendations)) {
+      for (const [index, recommendation] of payload.recommendations.entries()) {
+        await client.query(
+          `INSERT INTO order_recommendations (id, order_id, product_id, product_name, sort_order)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            crypto.randomUUID(),
+            orderId,
+            recommendation.productId || null,
+            recommendation.productName || recommendation.name || "Recommended product",
+            index,
+          ]
+        );
+      }
+    }
+  });
+
+  return getOrderById(orderId);
+};
+
+const updateOrderStatus = async (id, status) => {
+  if (!allowedStatuses.includes(status)) {
+    throw new HttpError(400, "Invalid order status", allowedStatuses);
+  }
+
+  const result = await db.query(
+    `UPDATE orders
+     SET status = $1
+     WHERE id = $2
+     RETURNING id`,
+    [status, id]
+  );
+
+  if (!result.rows[0]) {
+    throw new HttpError(404, "Order not found");
+  }
+
+  return getOrderById(id);
+};
+
+module.exports = {
+  listOrders,
+  createOrder,
+  updateOrderStatus,
+};

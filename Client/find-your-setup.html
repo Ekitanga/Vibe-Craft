@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ask Vibecraft's AI assistant about prices, specs, and which projector setup fits your room." />
+    <title>Vibecraft — Find your setup</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img src="assets/vbc-logo.png" alt="Vibecraft254" /></a>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="siteNav">Menu</button>
+      <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+        <button class="nav-close" id="navClose" type="button" aria-label="Close navigation">✕</button>
+        <a href="index.html#top">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+        <a class="mobile-cart-link" href="cart.html"><span class="cart-link-label"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>Cart</span><span class="cart-count" hidden>0</span></a>
+      </nav>
+      <div class="cart-hover-wrap">
+        <button class="cart-toggle" id="cartToggle" type="button" aria-label="Open cart" aria-expanded="false" aria-controls="cartDrawer"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg><span class="cart-count" hidden>0</span></button>
+        <div class="cart-preview">
+          <div class="cart-preview-body" id="cartPreviewBody"><p class="cart-empty">Your cart is empty.</p></div>
+          <a class="text-link cart-preview-link" href="cart.html">View cart <span>→</span></a>
+        </div>
+      </div>
+      <a class="login-link" href="login.html" data-auth-link>Log in</a>
+    </header>
+    <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Close navigation" hidden></button>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart" aria-hidden="true">
+      <div class="cart-drawer-head">
+        <h2>Your cart</h2>
+        <button class="nav-close" id="cartClose" type="button" aria-label="Close cart">✕</button>
+      </div>
+      <div class="cart-drawer-body" id="cartDrawerBody"></div>
+      <div class="cart-drawer-footer">
+        <div class="cart-drawer-total"><span>Subtotal</span><strong id="cartDrawerSubtotal">KES 0</strong></div>
+        <a class="button button-dark auth-submit" href="cart.html">Go to checkout</a>
+      </div>
+    </aside>
+    <button class="menu-backdrop" id="cartBackdrop" type="button" aria-label="Close cart" hidden></button>
+
+    <main>
+      <div class="ai-page section-shell">
+        <div class="ai-intro">
+          <span class="ai-orb ai-orb-lg" aria-hidden="true"></span>
+          <p class="eyebrow">AI shopping assistant</p>
+          <h1>Find your <em>setup.</em></h1>
+          <p class="ai-sub">Ask about prices, specs, or what holds up in a bright room — answers come straight from our real catalog and stock.</p>
+        </div>
+
+        <div class="ai-chat">
+          <div class="ai-messages" id="aiMessages"></div>
+
+          <div class="ai-suggestions" id="aiSuggestions">
+            <button type="button" class="ai-chip">What's your cheapest projector?</button>
+            <button type="button" class="ai-chip">What works best in a bright room?</button>
+            <button type="button" class="ai-chip">What's good for movie nights outdoors?</button>
+          </div>
+
+          <form class="ai-input-row" id="aiForm">
+            <input id="aiInput" type="text" placeholder="Ask about price, specs, or your room…" autocomplete="off" maxlength="800" required />
+            <button class="button button-dark" type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="cart-store.js"></script>
+    <script src="app.js"></script>
+    <script src="find-your-setup.js"></script>
+  </body>
+</html>

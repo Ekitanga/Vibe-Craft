@@ -1,0 +1,153 @@
+const { GoogleGenAI } = require("@google/genai");
+const env = require("../config/env");
+const HttpError = require("../utils/httpError");
+const productService = require("./productService");
+
+const MAX_MESSAGE_LENGTH = 800;
+const MAX_HISTORY_TURNS = 12;
+
+let client = null;
+
+const getClient = () => {
+  if (!env.geminiApiKey) {
+    return null;
+  }
+
+  if (!client) {
+    client = new GoogleGenAI({ apiKey: env.geminiApiKey });
+  }
+
+  return client;
+};
+
+const formatCatalogForPrompt = (products) =>
+  products.map((product) => ({
+    name: product.name,
+    brand: product.brand || undefined,
+    category: product.categoryId,
+    price_kes: product.price,
+    compare_at_price_kes: product.compareAtPrice || undefined,
+    in_stock: product.stock > 0,
+    stock_count: product.stock,
+    resolution: product.resolution || undefined,
+    brightness: product.brightness || undefined,
+    ansi_lumens: product.ansiLumens || undefined,
+    projector_type: product.projectorType || undefined,
+    smart_os: product.smartOS,
+    wifi: product.wifi,
+    bluetooth: product.bluetooth,
+    summary: product.shortSummary || undefined,
+    description: product.description || undefined,
+    specs: product.specs && Object.keys(product.specs).length ? product.specs : undefined,
+    ideal_use_cases: product.idealUseCases && product.idealUseCases.length ? product.idealUseCases : undefined,
+    whats_in_box: product.whatsInBox && product.whatsInBox.length ? product.whatsInBox : undefined,
+    product_url: "/product.html?id=" + product.id,
+  }));
+
+const buildSystemInstruction = (catalogJson) =>
+  [
+    "You are the Vibecraft254 shopping assistant, helping customers pick the right projector setup.",
+    "Vibecraft254 is a Kenyan electronics retailer selling projectors and related gear. All prices are in Kenyan Shillings (KES).",
+    "Only answer using the CATALOG data below - never invent products, prices, specs, or stock levels that aren't listed.",
+    "If something isn't in the catalog, say Vibecraft254 doesn't currently carry that, rather than guessing.",
+    "For questions about ambient light or bright rooms: as a rule of thumb, under ~1500 ANSI lumens is best in a dark room, 1500-2500 is fine for dim or evening light, and above 2500 ANSI lumens holds up in moderate daylight. Reason from each product's ansi_lumens/brightness field, and say plainly if a product isn't ideal for a bright room.",
+    "For 'cheapest' or 'lowest price' questions, compare the price_kes field directly across the relevant products.",
+    "Keep answers short and conversational, a few sentences, not an essay. Use short bullet points only when comparing multiple products.",
+    "When you recommend a specific product, say its exact name so the customer can find it.",
+    "If a product is out of stock (in_stock: false), mention that.",
+    "Never invent a discount, promotion, or delivery time that isn't in the data.",
+    "",
+    "CATALOG (JSON):",
+    catalogJson,
+  ].join("\n");
+
+const classifyGeminiError = (error) => {
+  const status = error && error.status;
+
+  if (status === 404) {
+    return new HttpError(500, "The AI assistant's model is misconfigured (model not found). This needs a developer to fix GEMINI_MODEL.");
+  }
+
+  if (status === 401 || status === 403) {
+    return new HttpError(500, "The AI assistant's API key is invalid or doesn't have permission. Check GEMINI_API_KEY.");
+  }
+
+  if (status === 400) {
+    return new HttpError(502, "The AI assistant rejected that request. Try rephrasing your question.");
+  }
+
+  if (status === 429) {
+    return new HttpError(503, "The AI assistant has hit its usage limit for now. Please try again in a few minutes.");
+  }
+
+  if (typeof status === "number" && status >= 500) {
+    return new HttpError(503, "The AI service is temporarily overloaded. Please try again shortly.");
+  }
+
+  return new HttpError(502, "Could not reach the AI assistant right now. Please try again in a moment.");
+};
+
+const chat = async ({ message, history }) => {
+  const trimmedMessage = String(message || "").trim();
+
+  if (!trimmedMessage) {
+    throw new HttpError(400, "Message is required.");
+  }
+
+  if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
+    throw new HttpError(400, "Message is too long (max " + MAX_MESSAGE_LENGTH + " characters).");
+  }
+
+  const genAI = getClient();
+
+  if (!genAI) {
+    throw new HttpError(500, "The AI assistant is not configured yet.");
+  }
+
+  const safeHistory = Array.isArray(history) ? history.slice(-MAX_HISTORY_TURNS) : [];
+  const contents = safeHistory
+    .filter((turn) => turn && (turn.role === "user" || turn.role === "assistant") && turn.content)
+    .map((turn) => ({
+      role: turn.role === "assistant" ? "model" : "user",
+      parts: [{ text: String(turn.content).slice(0, MAX_MESSAGE_LENGTH) }],
+    }));
+
+  contents.push({ role: "user", parts: [{ text: trimmedMessage }] });
+
+  const products = await productService.listProducts();
+  const catalogJson = JSON.stringify(formatCatalogForPrompt(products), null, 2);
+
+  let response;
+
+  try {
+    response = await genAI.models.generateContent({
+      model: env.geminiModel,
+      contents,
+      config: {
+        systemInstruction: buildSystemInstruction(catalogJson),
+        maxOutputTokens: 2048,
+        temperature: 0.4,
+      },
+    });
+  } catch (error) {
+    console.error("[ai-assistant] Gemini request failed:", error && error.message ? error.message : error);
+    throw classifyGeminiError(error);
+  }
+
+  const text = response && response.text ? String(response.text).trim() : "";
+
+  if (!text) {
+    const finishReason = response && response.candidates && response.candidates[0] && response.candidates[0].finishReason;
+
+    if (finishReason === "SAFETY" || finishReason === "PROHIBITED_CONTENT") {
+      throw new HttpError(502, "I can't help with that particular question — try asking about our products a different way.");
+    }
+
+    console.error("[ai-assistant] Empty response from Gemini. finishReason:", finishReason);
+    throw new HttpError(502, "The AI assistant didn't return a response. Please try again.");
+  }
+
+  return { reply: text };
+};
+
+module.exports = { chat };
