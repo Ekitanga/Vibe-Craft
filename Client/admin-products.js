@@ -139,13 +139,12 @@
 
     tableBody.innerHTML = state.products
       .map(function (product) {
-        var stock = Number(product.stock || 0);
         return [
           "<tr>",
           "<td>" + window.VibecraftAdmin.escapeHtml(product.name) + "</td>",
           "<td>" + window.VibecraftAdmin.escapeHtml(categoryName(product.categoryId)) + "</td>",
           "<td>" + priceFormatter.format(Number(product.price || 0)) + "</td>",
-          "<td>" + stock + "</td>",
+          "<td>" + window.VibecraftAdmin.stockBadge(product.stock) + "</td>",
           '<td><div class="admin-table-actions">' +
             '<button type="button" data-edit="' + window.VibecraftAdmin.escapeHtml(product.id) + '">Edit</button>' +
             '<button type="button" class="is-danger" data-delete="' + window.VibecraftAdmin.escapeHtml(product.id) + '">Delete</button>' +

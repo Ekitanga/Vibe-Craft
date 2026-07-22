@@ -251,6 +251,15 @@ const createOrder = async (payload, customerAccountId) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [crypto.randomUUID(), orderId, item.productId, item.name, item.quantity, item.unitPrice, item.lineTotal]
       );
+
+      const stockUpdate = await client.query(
+        `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1 RETURNING stock`,
+        [item.quantity, item.productId]
+      );
+
+      if (!stockUpdate.rows[0]) {
+        throw new HttpError(409, `${item.name} no longer has enough stock available.`);
+      }
     }
 
     if (Array.isArray(payload.inquiryAnswers)) {
@@ -299,22 +308,62 @@ const createOrder = async (payload, customerAccountId) => {
   return getOrderById(orderId);
 };
 
+const restockOrderItems = async (client, orderId) => {
+  const items = await client.query(
+    `SELECT product_id, quantity FROM order_items WHERE order_id = $1 AND product_id IS NOT NULL`,
+    [orderId]
+  );
+
+  for (const item of items.rows) {
+    await client.query(`UPDATE products SET stock = stock + $1 WHERE id = $2`, [item.quantity, item.product_id]);
+  }
+};
+
+const reserveOrderItems = async (client, orderId) => {
+  const items = await client.query(
+    `SELECT product_id, product_name, quantity FROM order_items WHERE order_id = $1 AND product_id IS NOT NULL`,
+    [orderId]
+  );
+
+  for (const item of items.rows) {
+    const stockUpdate = await client.query(
+      `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1 RETURNING stock`,
+      [item.quantity, item.product_id]
+    );
+
+    if (!stockUpdate.rows[0]) {
+      throw new HttpError(409, `${item.product_name} doesn't have enough stock to reactivate this order.`);
+    }
+  }
+};
+
 const updateOrderStatus = async (id, status) => {
   if (!allowedStatuses.includes(status)) {
     throw new HttpError(400, "Invalid order status", allowedStatuses);
   }
 
-  const result = await db.query(
-    `UPDATE orders
-     SET status = $1
-     WHERE id = $2
-     RETURNING id`,
-    [status, id]
-  );
+  await db.withTransaction(async (client) => {
+    const orderResult = await client.query(`SELECT status FROM orders WHERE id = $1 FOR UPDATE`, [id]);
 
-  if (!result.rows[0]) {
-    throw new HttpError(404, "Order not found");
-  }
+    if (!orderResult.rows[0]) {
+      throw new HttpError(404, "Order not found");
+    }
+
+    const previousStatus = orderResult.rows[0].status;
+
+    if (previousStatus !== status) {
+      const wasCancelled = previousStatus === "cancelled";
+      const willBeCancelled = status === "cancelled";
+
+      if (willBeCancelled && !wasCancelled) {
+        await restockOrderItems(client, id);
+      } else if (wasCancelled && !willBeCancelled) {
+        await reserveOrderItems(client, id);
+      }
+    }
+
+    await client.query(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
+  });
 
   return getOrderById(id);
 };

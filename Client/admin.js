@@ -79,6 +79,27 @@
     });
   }
 
+  var LOW_STOCK_THRESHOLD = 5;
+
+  function stockStatus(stock) {
+    var value = Number(stock || 0);
+
+    if (value <= 0) {
+      return { label: "Out of stock", className: "stock-out" };
+    }
+
+    if (value <= LOW_STOCK_THRESHOLD) {
+      return { label: value + " left — low stock", className: "stock-low" };
+    }
+
+    return { label: String(value), className: "stock-ok" };
+  }
+
+  function stockBadge(stock) {
+    var status = stockStatus(stock);
+    return '<span class="stock-pill ' + status.className + '">' + escapeHtml(status.label) + "</span>";
+  }
+
   function escapeHtml(value) {
     return String(value === undefined || value === null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -94,6 +115,9 @@
     renderAccountMenu: renderAccountMenu,
     markActiveNav: markActiveNav,
     escapeHtml: escapeHtml,
+    lowStockThreshold: LOW_STOCK_THRESHOLD,
+    stockStatus: stockStatus,
+    stockBadge: stockBadge,
   };
 
   markActiveNav();

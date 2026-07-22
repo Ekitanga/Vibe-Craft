@@ -183,7 +183,7 @@
       var orders = (responses[1] && responses[1].data) || [];
       var categories = (responses[2] && responses[2].data) || [];
       var lowStock = products.filter(function (product) {
-        return Number(product.stock || 0) <= 2;
+        return Number(product.stock || 0) <= window.VibecraftAdmin.lowStockThreshold;
       });
       var pending = orders.filter(function (order) {
         return order.status === "pending";
