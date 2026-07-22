@@ -41,6 +41,53 @@
     return String(user.email || "U").slice(0, 2).toUpperCase();
   }
 
+  function wireCustomerAccountMenu(link, user) {
+    var menu = document.getElementById("customerAccountMenu");
+    if (!menu) return;
+
+    var nameEl = document.getElementById("customerAccountName");
+    var emailEl = document.getElementById("customerAccountEmail");
+    if (nameEl) nameEl.textContent = user.name || "Account";
+    if (emailEl) emailEl.textContent = user.email || "";
+
+    var signOutBtn = document.getElementById("customerAccountSignOut");
+    if (signOutBtn) {
+      signOutBtn.addEventListener("click", async function () {
+        try {
+          await window.VibecraftApi.post("auth/logout");
+        } finally {
+          window.location.href = "index.html";
+        }
+      });
+    }
+
+    // Below 821px the dropdown is hidden (CSS) and the avatar just navigates to account.html directly.
+    if (!window.matchMedia("(min-width: 821px)").matches) return;
+
+    link.setAttribute("aria-haspopup", "true");
+    link.setAttribute("aria-expanded", "false");
+
+    function setMenuOpen(isOpen) {
+      menu.hidden = !isOpen;
+      link.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      setMenuOpen(menu.hidden);
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!menu.hidden && !menu.contains(event.target) && event.target !== link) {
+        setMenuOpen(false);
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !menu.hidden) setMenuOpen(false);
+    });
+  }
+
   async function syncAuthLink() {
     var link = document.querySelector("[data-auth-link]");
 
@@ -55,8 +102,9 @@
         link.href = "account.html";
         link.textContent = getInitials(user);
         link.classList.add("account-avatar-link");
-        link.setAttribute("aria-label", "Open account for " + (user.name || user.email));
+        link.setAttribute("aria-label", "Open account menu for " + (user.name || user.email));
         link.title = user.name || user.email || "Account";
+        wireCustomerAccountMenu(link, user);
         return;
       }
     } catch (_error) {

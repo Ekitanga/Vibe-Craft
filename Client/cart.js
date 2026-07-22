@@ -138,11 +138,26 @@
     }
   });
 
+  async function prefillFromAccount() {
+    try {
+      var payload = await window.VibecraftApi.get("auth/me");
+      var account = payload && payload.data;
+      if (!account) return;
+
+      if (account.name) document.getElementById("checkoutName").value = account.name;
+      if (account.phone) document.getElementById("checkoutPhone").value = account.phone;
+      if (account.email) document.getElementById("checkoutEmail").value = account.email;
+    } catch (_error) {
+      // Not signed in - leave the checkout form blank.
+    }
+  }
+
   async function boot() {
     try {
       var payload = await window.VibecraftApi.get("products");
       products = (payload && payload.data) || [];
       render();
+      prefillFromAccount();
     } catch (_error) {
       itemsList.innerHTML = '<p class="cart-empty-state">Could not load your cart.</p>';
     }

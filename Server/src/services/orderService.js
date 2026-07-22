@@ -153,6 +153,33 @@ const listOrders = async () => {
   return hydrateOrderDetails(orders);
 };
 
+const listOrdersForAccount = async ({ accountId, email }) => {
+  const result = await db.query(
+    `SELECT
+      o.id,
+      o.customer_id,
+      o.notes,
+      o.status,
+      o.total,
+      o.currency,
+      o.created_at,
+      o.updated_at,
+      c.name AS customer_name,
+      c.phone AS customer_phone,
+      c.email AS customer_email,
+      c.location AS customer_location
+    FROM orders o
+    JOIN customers c ON c.id = o.customer_id
+    WHERE o.customer_account_id = $1
+       OR (o.customer_account_id IS NULL AND LOWER(c.email) = LOWER($2))
+    ORDER BY o.created_at DESC`,
+    [accountId, email || ""]
+  );
+  const orders = result.rows.map(mapOrderRow);
+
+  return hydrateOrderDetails(orders);
+};
+
 const getOrderById = async (id) => {
   const result = await db.query(
     `SELECT
@@ -183,7 +210,7 @@ const getOrderById = async (id) => {
   return orders[0];
 };
 
-const createOrder = async (payload) => {
+const createOrder = async (payload, customerAccountId) => {
   validateCustomer(payload.customer);
 
   const items = await normalizeItems(payload.items);
@@ -205,9 +232,9 @@ const createOrder = async (payload) => {
     );
 
     await client.query(
-      `INSERT INTO orders (id, customer_id, notes, status, total, currency)
-       VALUES ($1, $2, $3, 'pending', $4, 'KES')`,
-      [orderId, customerId, payload.notes || "", total]
+      `INSERT INTO orders (id, customer_id, customer_account_id, notes, status, total, currency)
+       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES')`,
+      [orderId, customerId, customerAccountId || null, payload.notes || "", total]
     );
 
     for (const item of items) {
@@ -294,6 +321,7 @@ const updateOrderStatus = async (id, status) => {
 
 module.exports = {
   listOrders,
+  listOrdersForAccount,
   createOrder,
   updateOrderStatus,
 };

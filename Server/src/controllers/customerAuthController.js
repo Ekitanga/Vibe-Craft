@@ -88,6 +88,44 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const account = await customerAuthService.updateProfile(req.customer.id, req.body || {});
+
+  res.status(200).json({
+    success: true,
+    data: account,
+  });
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  await customerAuthService.setOrChangePassword(req.customer.id, { currentPassword, newPassword });
+
+  res.status(200).json({
+    success: true,
+    data: { updated: true },
+  });
+});
+
+const linkGoogle = asyncHandler(async (req, res) => {
+  const { idToken } = req.body || {};
+  const account = await customerAuthService.linkGoogleAccount(req.customer.id, idToken);
+
+  res.status(200).json({
+    success: true,
+    data: account,
+  });
+});
+
+const unlinkGoogle = asyncHandler(async (req, res) => {
+  const account = await customerAuthService.unlinkGoogleAccount(req.customer.id);
+
+  res.status(200).json({
+    success: true,
+    data: account,
+  });
+});
+
 const logout = asyncHandler(async (req, res) => {
   await customerAuthService.destroyCustomerSession(getCustomerSessionToken(req));
   await adminAuthService.destroyAdminSession(getAdminSessionToken(req));
@@ -101,9 +139,13 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  changePassword,
   googleLogin,
+  linkGoogle,
   login,
   logout,
   me,
   signup,
+  unlinkGoogle,
+  updateProfile,
 };

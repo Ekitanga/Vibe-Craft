@@ -71,6 +71,42 @@
     document.getElementById("qtyValue").textContent = qty;
   }
 
+  function renderThumbnails(images, mainImageEl, thumbsEl) {
+    var gallery = (images || []).filter(Boolean);
+
+    thumbsEl.innerHTML = "";
+
+    if (gallery.length < 2) {
+      thumbsEl.hidden = true;
+      return;
+    }
+
+    thumbsEl.hidden = false;
+
+    gallery.forEach(function (src, index) {
+      var thumb = document.createElement("button");
+      thumb.type = "button";
+      thumb.className = "product-thumb" + (index === 0 ? " is-active" : "");
+      thumb.setAttribute("aria-label", "Show image " + (index + 1));
+
+      var img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.loading = "lazy";
+      thumb.appendChild(img);
+
+      thumb.addEventListener("click", function () {
+        mainImageEl.src = src;
+        thumbsEl.querySelectorAll(".product-thumb").forEach(function (el) {
+          el.classList.remove("is-active");
+        });
+        thumb.classList.add("is-active");
+      });
+
+      thumbsEl.appendChild(thumb);
+    });
+  }
+
   function getCartQuantity(productId) {
     var existing = window.VibecraftCart.getItems().find(function (item) {
       return item.productId === productId;
@@ -110,6 +146,7 @@
       var imageEl = document.getElementById("productDetailImage");
       imageEl.src = image || "";
       imageEl.alt = product.name;
+      renderThumbnails(product.images, imageEl, document.getElementById("productDetailThumbs"));
 
       document.getElementById("productDetailName").textContent = product.name;
       document.getElementById("productDetailPrice").textContent = formatPrice(product.price, product.currency);

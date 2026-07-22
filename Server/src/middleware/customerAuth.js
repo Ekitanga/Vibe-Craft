@@ -21,7 +21,18 @@ const requireCustomer = async (req, _res, next) => {
   }
 };
 
+const attachCustomerIfPresent = async (req, _res, next) => {
+  try {
+    req.customer = await customerAuthService.getCustomerBySessionToken(getCustomerSessionToken(req));
+  } catch (_error) {
+    req.customer = null;
+  }
+
+  next();
+};
+
 module.exports = {
+  attachCustomerIfPresent,
   customerSessionCookieName,
   getCustomerSessionToken,
   requireCustomer,

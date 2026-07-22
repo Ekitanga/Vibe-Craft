@@ -12,11 +12,24 @@ const listOrders = asyncHandler(async (_req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const order = await orderService.createOrder(req.body);
+  const order = await orderService.createOrder(req.body, req.customer ? req.customer.id : null);
 
   res.status(201).json({
     success: true,
     data: order,
+  });
+});
+
+const listMyOrders = asyncHandler(async (req, res) => {
+  const orders = await orderService.listOrdersForAccount({
+    accountId: req.customer.id,
+    email: req.customer.email,
+  });
+
+  res.json({
+    success: true,
+    count: orders.length,
+    data: orders,
   });
 });
 
@@ -31,6 +44,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
 module.exports = {
   listOrders,
+  listMyOrders,
   createOrder,
   updateOrderStatus,
 };
