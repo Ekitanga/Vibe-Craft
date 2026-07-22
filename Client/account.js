@@ -23,6 +23,26 @@
     el.classList.toggle("is-error", Boolean(isError));
   }
 
+  function renderProfilePhoto(account) {
+    var photo = document.getElementById("profilePhoto");
+    var fallback = document.getElementById("profilePhotoFallback");
+
+    if (!photo || !fallback) return;
+
+    fallback.textContent = String(account.name || account.email || "U").trim().slice(0, 1).toUpperCase();
+
+    if (account.profileImageUrl) {
+      photo.src = account.profileImageUrl;
+      photo.hidden = false;
+      fallback.hidden = true;
+      return;
+    }
+
+    photo.removeAttribute("src");
+    photo.hidden = true;
+    fallback.hidden = false;
+  }
+
   function renderPasswordSection(account) {
     var heading = document.getElementById("passwordHeading");
     var currentField = document.getElementById("currentPasswordField");
@@ -164,6 +184,7 @@
     document.getElementById("profileName").value = account.name || "";
     document.getElementById("profileEmail").value = account.email || "";
     document.getElementById("profilePhone").value = account.phone || "";
+    renderProfilePhoto(account);
 
     renderPasswordSection(account);
     renderGoogleConnection(account);
@@ -193,6 +214,26 @@
     applyAccount(account);
     status.textContent = "";
     loadOrders();
+
+    document.getElementById("profilePhotoInput").addEventListener("change", async function (event) {
+      var file = event.target.files && event.target.files[0];
+      var statusEl = document.getElementById("profilePhotoStatus");
+      if (!file) return;
+
+      var formData = new FormData();
+      formData.append("image", file);
+      setStatus(statusEl, "Uploading…");
+
+      try {
+        var payload = await window.VibecraftApi.upload("auth/me/avatar", formData);
+        applyAccount(payload.data);
+        setStatus(statusEl, "Profile photo saved.");
+      } catch (error) {
+        setStatus(statusEl, error.message || "Could not upload your profile photo.", true);
+      } finally {
+        event.target.value = "";
+      }
+    });
 
     document.getElementById("profileForm").addEventListener("submit", async function (event) {
       event.preventDefault();

@@ -4,6 +4,8 @@ Express backend for the Vibecraft projector shop. Product, order, inquiry, and a
 
 The server also serves the plain HTML/CSS/JavaScript client from `../Client`, so the whole app runs from one local URL.
 
+Product and customer profile images are stored in Cloudinary. Set the three `CLOUDINARY_*` variables from `.env.example` before using image uploads.
+
 ## Getting started
 
 ```bash
@@ -88,6 +90,7 @@ Admin pages:
 - `POST /api/auth/signup` - Create a customer account.
 - `POST /api/auth/login` - Shared customer/admin email/password sign in.
 - `GET /api/auth/me` - Current signed-in customer.
+- `POST /api/auth/me/avatar` - Upload the signed-in customer's profile image.
 - `POST /api/auth/logout` - End the current customer/admin session.
 - `POST /api/admin/auth/login` - Direct admin email/password sign in endpoint.
 - `GET /api/admin/auth/me` - Current signed-in admin.
@@ -96,11 +99,11 @@ Admin pages:
 - `POST /api/admin/products` - Create a product.
 - `PATCH /api/admin/products/:id` - Update a product.
 - `DELETE /api/admin/products/:id` - Delete a product.
+- `POST /api/admin/uploads` - Upload product images for the signed-in admin.
 - `GET /api/admin/orders` - Admin order list.
 - `PATCH /api/admin/orders/:id/status` - Update order status.
 
 ## Next backend steps
 
-- Add image upload support.
 - Add Google admin sign-in.
 - Add payment or WhatsApp inquiry integration.

@@ -1,7 +1,10 @@
 const dotenv = require("dotenv");
 const path = require("path");
 
-dotenv.config();
+// Support both `Server/.env` (backend development) and the project-root `.env`
+// (the command used by the Render/local root scripts).
+dotenv.config({ path: path.join(__dirname, "../../.env") });
+dotenv.config({ path: path.join(__dirname, "../.env"), override: false });
 
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
@@ -23,6 +26,9 @@ const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-flash-latest",
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
 };
 
 module.exports = env;

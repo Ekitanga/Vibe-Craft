@@ -193,6 +193,7 @@ h2 { max-width: 620px; margin-bottom: 0; font-size: clamp(42px, 6vw, 70px); lett
 .footer-social a:hover { border-color: var(--lime); background: var(--lime); color: var(--ink); transform: translateY(-2px); }
 
 .account-avatar-link { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border-radius: 50%; font-size: 12px; letter-spacing: 0; }
+.account-avatar-link img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .auth-main { display: flex; justify-content: center; padding: clamp(48px, 8vw, 88px) clamp(24px, 5vw, 72px) 96px; }
 .auth-shell { width: min(100%, 440px); }
 .auth-shell h1 { max-width: none; margin-bottom: 10px; font-size: clamp(32px, 6vw, 44px); }
@@ -230,6 +231,11 @@ h2 { max-width: 620px; margin-bottom: 0; font-size: clamp(42px, 6vw, 70px); lett
 .account-connection-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .account-connection-info strong { display: block; font-family: var(--body); font-size: 14px; }
 .account-connection-info span { color: var(--muted); font-size: 13px; }
+.profile-photo-editor { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.profile-photo-frame { display: flex; flex: none; align-items: center; justify-content: center; width: 76px; height: 76px; overflow: hidden; border-radius: 50%; background: var(--ink); color: #fff; font-size: 22px; font-weight: 700; }
+.profile-photo-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.profile-photo-controls { display: grid; gap: 6px; }
+.profile-photo-controls small { color: var(--muted); font-size: 11px; }
 .order-card { padding: 16px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 14px; }
 .order-card:last-child { margin-bottom: 0; }
 .order-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }

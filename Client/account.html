@@ -70,6 +70,20 @@
               <div class="admin-panel-heading">
                 <h2>Profile</h2>
               </div>
+              <div class="profile-photo-editor">
+                <div class="profile-photo-frame">
+                  <img id="profilePhoto" src="" alt="Profile photo" hidden />
+                  <span id="profilePhotoFallback" aria-hidden="true">?</span>
+                </div>
+                <div class="profile-photo-controls">
+                  <label class="button button-outline image-upload-button" for="profilePhotoInput">
+                    Choose profile photo
+                    <input id="profilePhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                  </label>
+                  <small>JPG, PNG, WEBP, or GIF. Maximum 5MB.</small>
+                  <p class="form-status" id="profilePhotoStatus" role="status"></p>
+                </div>
+              </div>
               <form id="profileForm" novalidate>
                 <div class="form-grid">
                   <div class="field">

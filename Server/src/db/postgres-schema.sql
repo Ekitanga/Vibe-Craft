@@ -204,6 +204,7 @@ CREATE TABLE IF NOT EXISTS customer_accounts (
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   phone TEXT,
+  profile_image_url TEXT,
   password_hash TEXT,
   password_salt TEXT,
   google_id TEXT UNIQUE,

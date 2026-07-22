@@ -1,5 +1,8 @@
 node_modules/
 Server/node_modules/
+.env
+.env.*
+!.env.example
 Server/data/*.sqlite
 Server/data/*.sqlite-*
 Server/data/*.log

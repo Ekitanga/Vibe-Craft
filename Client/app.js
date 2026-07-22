@@ -100,7 +100,16 @@
         var user = payload.data;
 
         link.href = "account.html";
-        link.textContent = getInitials(user);
+        link.textContent = "";
+        if (user.profileImageUrl) {
+          var profileImage = document.createElement("img");
+          profileImage.src = user.profileImageUrl;
+          profileImage.alt = "";
+          profileImage.loading = "lazy";
+          link.appendChild(profileImage);
+        } else {
+          link.textContent = getInitials(user);
+        }
         link.classList.add("account-avatar-link");
         link.setAttribute("aria-label", "Open account menu for " + (user.name || user.email));
         link.title = user.name || user.email || "Account";

@@ -264,6 +264,7 @@ const initializePostgres = async () => {
   const schema = fs.readFileSync(schemaPath, "utf8");
 
   await db.query(schema);
+  await db.query("ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS profile_image_url TEXT");
 
   await db.withTransaction(async (client) => {
     if (resetRequested) {

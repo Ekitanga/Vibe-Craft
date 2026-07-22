@@ -22,6 +22,7 @@ const toCustomerAccount = (row) => ({
   name: row.name,
   email: row.email,
   phone: row.phone,
+  profileImageUrl: row.profile_image_url || null,
   hasPassword: Boolean(row.password_hash),
   hasGoogleLinked: Boolean(row.google_id),
   createdAt: row.created_at,
@@ -84,7 +85,7 @@ const signupCustomer = async ({ name, email, phone, password }) => {
   const result = await db.query(
     `INSERT INTO customer_accounts (id, name, email, phone, password_hash, password_salt)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, name, email, phone, password_hash, google_id, created_at, updated_at`,
+     RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
     [
       `customer_${crypto.randomUUID()}`,
       normalized.name,
@@ -105,7 +106,7 @@ const signupCustomer = async ({ name, email, phone, password }) => {
 
 const listCustomerAccounts = async () => {
   const result = await db.query(
-    `SELECT id, name, email, phone, password_hash, google_id, created_at, updated_at
+    `SELECT id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at
      FROM customer_accounts
      ORDER BY created_at DESC`
   );
@@ -121,7 +122,7 @@ const authenticateCustomer = async ({ email, password }) => {
   }
 
   const result = await db.query(
-    `SELECT id, name, email, phone, password_hash, password_salt, google_id, created_at, updated_at
+    `SELECT id, name, email, phone, profile_image_url, password_hash, password_salt, google_id, created_at, updated_at
      FROM customer_accounts
      WHERE email = $1`,
     [normalizedEmail]
@@ -170,7 +171,7 @@ const authenticateWithGoogle = async (idToken) => {
   const name = String(payload.name || email.split("@")[0] || "Customer").trim();
 
   let result = await db.query(
-    `SELECT id, name, email, phone, password_hash, google_id, created_at, updated_at
+    `SELECT id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at
      FROM customer_accounts
      WHERE google_id = $1`,
     [googleId]
@@ -178,7 +179,7 @@ const authenticateWithGoogle = async (idToken) => {
 
   if (!result.rows[0]) {
     result = await db.query(
-      `SELECT id, name, email, phone, password_hash, google_id, created_at, updated_at
+      `SELECT id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at
        FROM customer_accounts
        WHERE email = $1`,
       [email]
@@ -197,7 +198,7 @@ const authenticateWithGoogle = async (idToken) => {
     result = await db.query(
       `INSERT INTO customer_accounts (id, name, email, google_id)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, phone, password_hash, google_id, created_at, updated_at`,
+       RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
       [`customer_${crypto.randomUUID()}`, name, email, googleId]
     );
   }
@@ -223,6 +224,7 @@ const getCustomerBySessionToken = async (token) => {
        customer_accounts.name,
        customer_accounts.email,
        customer_accounts.phone,
+       customer_accounts.profile_image_url,
        customer_accounts.password_hash,
        customer_accounts.google_id,
        customer_accounts.created_at,
@@ -263,8 +265,24 @@ const updateProfile = async (accountId, { name, phone }) => {
     `UPDATE customer_accounts
      SET name = $1, phone = $2, updated_at = NOW()
      WHERE id = $3
-     RETURNING id, name, email, phone, password_hash, google_id, created_at, updated_at`,
+     RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
     [normalizedName, normalizePhone(phone) || null, accountId]
+  );
+
+  if (!result.rows[0]) {
+    throw new HttpError(404, "Account not found.");
+  }
+
+  return toCustomerAccount(result.rows[0]);
+};
+
+const updateProfileImage = async (accountId, profileImageUrl) => {
+  const result = await db.query(
+    `UPDATE customer_accounts
+     SET profile_image_url = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
+    [profileImageUrl, accountId]
   );
 
   if (!result.rows[0]) {
@@ -336,7 +354,7 @@ const linkGoogleAccount = async (accountId, idToken) => {
     `UPDATE customer_accounts
      SET google_id = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, name, email, phone, password_hash, google_id, created_at, updated_at`,
+     RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
     [googleId, accountId]
   );
 
@@ -359,7 +377,7 @@ const unlinkGoogleAccount = async (accountId) => {
     `UPDATE customer_accounts
      SET google_id = NULL, updated_at = NOW()
      WHERE id = $1
-     RETURNING id, name, email, phone, password_hash, google_id, created_at, updated_at`,
+     RETURNING id, name, email, phone, profile_image_url, password_hash, google_id, created_at, updated_at`,
     [accountId]
   );
 
@@ -377,4 +395,5 @@ module.exports = {
   signupCustomer,
   unlinkGoogleAccount,
   updateProfile,
+  updateProfileImage,
 };

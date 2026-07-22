@@ -1,23 +1,11 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
 const multer = require("multer");
 const HttpError = require("../utils/httpError");
-
-const uploadsDir = path.join(__dirname, "../../uploads");
-fs.mkdirSync(uploadsDir, { recursive: true });
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILES = 8;
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, crypto.randomUUID() + ext);
-  },
-});
+const storage = multer.memoryStorage();
 
 const fileFilter = (_req, file, cb) => {
   if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -57,4 +45,24 @@ const uploadImages = (req, res, next) => {
   });
 };
 
-module.exports = { uploadImages, uploadsDir };
+const uploadAvatar = (req, res, next) => {
+  upload.single("image")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        next(new HttpError(400, "The profile image must be 5MB or smaller."));
+        return;
+      }
+      next(new HttpError(400, error.message));
+      return;
+    }
+
+    next(error);
+  });
+};
+
+module.exports = { uploadAvatar, uploadImages };
