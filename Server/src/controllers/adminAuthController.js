@@ -31,6 +31,16 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  await adminAuthService.changeAdminPassword(req.admin.id, { currentPassword, newPassword });
+
+  res.status(200).json({
+    success: true,
+    data: { updated: true },
+  });
+});
+
 const listAdmins = asyncHandler(async (_req, res) => {
   const admins = await adminAuthService.listAdminUsers();
 
@@ -60,6 +70,7 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  changePassword,
   inviteAdmin,
   listAdmins,
   login,

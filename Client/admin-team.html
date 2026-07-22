@@ -18,6 +18,7 @@
         <a href="admin-dashboard.html">Dashboard</a>
         <a href="admin-products.html">Products</a>
         <a href="admin-orders.html">Orders</a>
+        <a href="admin-customers.html">Customers</a>
         <a href="admin-team.html">Team</a>
       </nav>
       <div class="admin-account">
@@ -42,6 +43,28 @@
         <div class="admin-topbar">
           <div><p class="eyebrow">Admin</p><h1>Team</h1></div>
         </div>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h2>Change your password</h2>
+          </div>
+
+          <form id="adminChangePasswordForm" novalidate>
+            <div class="form-grid">
+              <div class="field">
+                <label for="currentPassword">Current password</label>
+                <input id="currentPassword" type="password" required />
+              </div>
+              <div class="field">
+                <label for="newPassword">New password</label>
+                <input id="newPassword" type="password" required minlength="8" />
+                <small>At least 8 characters.</small>
+              </div>
+            </div>
+            <button class="button button-dark auth-submit" type="submit">Update password</button>
+            <p class="form-status" id="adminChangePasswordStatus" role="status"></p>
+          </form>
+        </section>
 
         <section class="admin-panel">
           <div class="admin-panel-heading">

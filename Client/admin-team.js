@@ -10,9 +10,17 @@
   var tableBody = document.getElementById("adminsTableBody");
   var adminCount = document.getElementById("adminCount");
 
+  var passwordForm = document.getElementById("adminChangePasswordForm");
+  var passwordStatus = document.getElementById("adminChangePasswordStatus");
+
   function setFormStatus(message, isError) {
     formStatus.textContent = message || "";
     formStatus.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function setPasswordStatus(message, isError) {
+    passwordStatus.textContent = message || "";
+    passwordStatus.classList.toggle("is-error", Boolean(isError));
   }
 
   function renderAdmins() {
@@ -61,6 +69,29 @@
       setFormStatus("Admin added.");
     } catch (error) {
       setFormStatus(error.message || "Could not add this admin.", true);
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  passwordForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    var submitButton = passwordForm.querySelector("button[type=submit]");
+    var payload = {
+      currentPassword: document.getElementById("currentPassword").value,
+      newPassword: document.getElementById("newPassword").value,
+    };
+
+    setPasswordStatus("Updating…");
+    submitButton.disabled = true;
+
+    try {
+      await window.VibecraftApi.post("admin/auth/change-password", payload);
+      passwordForm.reset();
+      setPasswordStatus("Password updated.");
+    } catch (error) {
+      setPasswordStatus(error.message || "Could not update your password.", true);
     } finally {
       submitButton.disabled = false;
     }

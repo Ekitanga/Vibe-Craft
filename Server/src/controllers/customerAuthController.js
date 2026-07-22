@@ -88,6 +88,16 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
+const listCustomers = asyncHandler(async (_req, res) => {
+  const customers = await customerAuthService.listCustomerAccounts();
+
+  res.status(200).json({
+    success: true,
+    count: customers.length,
+    data: customers,
+  });
+});
+
 const updateProfile = asyncHandler(async (req, res) => {
   const account = await customerAuthService.updateProfile(req.customer.id, req.body || {});
 
@@ -142,6 +152,7 @@ module.exports = {
   changePassword,
   googleLogin,
   linkGoogle,
+  listCustomers,
   login,
   logout,
   me,

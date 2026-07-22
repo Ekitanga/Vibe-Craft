@@ -103,6 +103,16 @@ const signupCustomer = async ({ name, email, phone, password }) => {
   };
 };
 
+const listCustomerAccounts = async () => {
+  const result = await db.query(
+    `SELECT id, name, email, phone, password_hash, google_id, created_at, updated_at
+     FROM customer_accounts
+     ORDER BY created_at DESC`
+  );
+
+  return result.rows.map(toCustomerAccount);
+};
+
 const authenticateCustomer = async ({ email, password }) => {
   const normalizedEmail = normalizeEmail(email);
 
@@ -362,6 +372,7 @@ module.exports = {
   destroyCustomerSession,
   getCustomerBySessionToken,
   linkGoogleAccount,
+  listCustomerAccounts,
   setOrChangePassword,
   signupCustomer,
   unlinkGoogleAccount,

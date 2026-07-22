@@ -110,6 +110,33 @@ const authenticateAdmin = async ({ email, password }) => {
   };
 };
 
+const changeAdminPassword = async (adminId, { currentPassword, newPassword }) => {
+  if (!newPassword || String(newPassword).length < 8) {
+    throw new HttpError(400, "New password must be at least 8 characters.");
+  }
+
+  const result = await db.query(
+    `SELECT password_hash, password_salt FROM admin_users WHERE id = $1`,
+    [adminId]
+  );
+  const row = result.rows[0];
+
+  if (!row) {
+    throw new HttpError(404, "Admin not found.");
+  }
+
+  if (!currentPassword || !passwordsMatch(currentPassword, row.password_salt, row.password_hash)) {
+    throw new HttpError(401, "Your current password is incorrect.");
+  }
+
+  const credentials = hashPassword(newPassword);
+
+  await db.query(
+    `UPDATE admin_users SET password_hash = $1, password_salt = $2, updated_at = NOW() WHERE id = $3`,
+    [credentials.hash, credentials.salt, adminId]
+  );
+};
+
 const getAdminBySessionToken = async (token) => {
   if (!token) {
     return null;
@@ -152,6 +179,7 @@ const destroyAdminSession = async (token) => {
 
 module.exports = {
   authenticateAdmin,
+  changeAdminPassword,
   createAdminUser,
   destroyAdminSession,
   getAdminBySessionToken,
