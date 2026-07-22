@@ -97,11 +97,36 @@
   }
 
   function renderCategoryOptions() {
-    categorySelect.innerHTML = state.categories
-      .map(function (category) {
-        return '<option value="' + window.VibecraftAdmin.escapeHtml(category.id) + '">' + window.VibecraftAdmin.escapeHtml(category.name) + "</option>";
-      })
-      .join("");
+    if (!state.categories.length) {
+      categorySelect.innerHTML = '<option value="">No categories available</option>';
+      categorySelect.disabled = true;
+      return;
+    }
+
+    categorySelect.disabled = false;
+    categorySelect.innerHTML = '<option value="">Choose a category</option>' +
+      state.categories
+        .map(function (category) {
+          return '<option value="' + window.VibecraftAdmin.escapeHtml(category.id) + '">' + window.VibecraftAdmin.escapeHtml(category.name) + "</option>";
+        })
+        .join("");
+  }
+
+  function renderCategoryError() {
+    categorySelect.innerHTML = '<option value="">Could not load categories</option>';
+    categorySelect.disabled = true;
+  }
+
+  async function loadCategories() {
+    var response = await window.VibecraftApi.get("categories");
+    state.categories = (response && response.data) || [];
+    renderCategoryOptions();
+  }
+
+  async function loadProducts() {
+    var response = await window.VibecraftApi.get("admin/products");
+    state.products = (response && response.data) || [];
+    renderProductsTable();
   }
 
   function renderProductsTable() {
@@ -167,11 +192,14 @@
   }
 
   async function loadCatalog() {
-    var responses = await Promise.all([window.VibecraftApi.get("categories"), window.VibecraftApi.get("admin/products")]);
-    state.categories = (responses[0] && responses[0].data) || [];
-    state.products = (responses[1] && responses[1].data) || [];
-    renderCategoryOptions();
-    renderProductsTable();
+    try {
+      await loadCategories();
+    } catch (error) {
+      renderCategoryError();
+      throw error;
+    }
+
+    await loadProducts();
   }
 
   form.addEventListener("submit", async function (event) {

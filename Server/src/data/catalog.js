@@ -4,6 +4,11 @@ const categories = [
     name: "Projectors",
     description: "Portable, home cinema, office, church, and event projectors.",
   },
+  {
+    id: "screens",
+    name: "Projector Screens",
+    description: "Tripod, wall-mounted, and portable projector screens.",
+  },
 ];
 
 const projectorGallery = [
