@@ -133,14 +133,15 @@
     productCount.textContent = state.products.length + (state.products.length === 1 ? " product" : " products");
 
     if (!state.products.length) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="5">No products yet.</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">No products yet.</td></tr>';
       return;
     }
 
     tableBody.innerHTML = state.products
-      .map(function (product) {
+      .map(function (product, index) {
         return [
           "<tr>",
+          "<td>" + (index + 1) + "</td>",
           "<td>" + window.VibecraftAdmin.escapeHtml(product.name) + "</td>",
           "<td>" + window.VibecraftAdmin.escapeHtml(categoryName(product.categoryId)) + "</td>",
           "<td>" + priceFormatter.format(Number(product.price || 0)) + "</td>",
@@ -284,7 +285,7 @@
     try {
       await loadCatalog();
     } catch (error) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="5">Could not load products.</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Could not load products.</td></tr>';
     }
   }
 
