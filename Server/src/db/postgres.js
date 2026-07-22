@@ -3,10 +3,24 @@ const env = require("../config/env");
 
 const sslConfig = env.pgSsl ? { rejectUnauthorized: false } : false;
 
+const cleanConnectionString = (connectionString) => {
+  if (!connectionString) {
+    return connectionString;
+  }
+
+  try {
+    const url = new URL(connectionString);
+    ["sslmode", "sslcert", "sslkey", "sslrootcert"].forEach((parameter) => url.searchParams.delete(parameter));
+    return url.toString();
+  } catch (_error) {
+    return connectionString;
+  }
+};
+
 const pool = new Pool(
   env.databaseUrl
     ? {
-        connectionString: env.databaseUrl,
+        connectionString: cleanConnectionString(env.databaseUrl),
         ssl: sslConfig,
       }
     : {
