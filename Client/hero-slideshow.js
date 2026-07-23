@@ -47,6 +47,7 @@
       '<div class="hero-slide' + (index === 0 ? " is-active" : "") + '" data-index="' + index + '" aria-hidden="' + (index === 0 ? "false" : "true") + '">',
       '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index === 0 ? "eager" : "lazy") + '" />',
       '<div class="hero-slide-scrim"></div>',
+      '<div class="hero-slide-fade"></div>',
       '<div class="hero-slide-info">',
       '<div class="hero-slide-badges">',
       categoryName ? '<span class="hero-slide-badge hero-slide-badge-outline">' + escapeHtml(categoryName) + "</span>" : "",
