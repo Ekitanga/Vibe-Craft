@@ -59,16 +59,27 @@
     <button class="menu-backdrop" id="cartBackdrop" type="button" aria-label="Close cart" hidden></button>
 
     <main>
-      <section class="hero" id="top">
-        <div class="hero-copy">
-          <p class="eyebrow">Crafting unique vibes for every room</p>
-          <h1>See more in <em>every room.</em></h1>
-          <p class="hero-intro">Thoughtful projector setups for movie nights, big ideas, shared moments, and everything in between.</p>
-          <a class="button button-dark find-setup-link" href="find-your-setup.html"><span class="ai-orb" aria-hidden="true"></span>Find your setup <span>↗</span></a>
+      <section class="hero-slideshow" id="top" aria-roledescription="carousel" aria-label="New arrivals">
+        <div class="hero-slides" id="heroSlides">
+          <a class="hero-slide is-active" href="find-your-setup.html">
+            <img src="assets/outdoor-cinema.jpg" alt="Friends watching a movie together on a projector screen at sunset" />
+            <div class="hero-slide-scrim"></div>
+            <div class="hero-slide-info">
+              <h2 class="hero-slide-title">See more in every room.</h2>
+              <p class="hero-slide-price">Thoughtful projector setups for movie nights and shared moments.</p>
+            </div>
+          </a>
         </div>
-        <div class="hero-visual">
-          <img src="assets/outdoor-cinema.jpg" alt="Friends watching a movie together on a projector screen at sunset" />
-        </div>
+        <button class="hero-arrow hero-arrow-prev" id="heroPrev" type="button" aria-label="Previous product" hidden>‹</button>
+        <button class="hero-arrow hero-arrow-next" id="heroNext" type="button" aria-label="Next product" hidden>›</button>
+        <div class="hero-progress" id="heroProgress" role="tablist" aria-label="Choose a product to feature" hidden></div>
+      </section>
+
+      <section class="hero-intro-band section-shell">
+        <p class="eyebrow">Crafting unique vibes for every room</p>
+        <h1>See more in <em>every room.</em></h1>
+        <p class="hero-intro">Thoughtful projector setups for movie nights, big ideas, shared moments, and everything in between.</p>
+        <a class="button button-dark find-setup-link" href="find-your-setup.html"><span class="ai-orb" aria-hidden="true"></span>Find your setup <span>↗</span></a>
       </section>
 
       <section class="trust-strip" id="about">
@@ -103,6 +114,7 @@
     <script src="api.js"></script>
     <script src="cart-store.js"></script>
     <script src="app.js"></script>
+    <script src="hero-slideshow.js"></script>
     <script src="storefront.js"></script>
   </body>
 </html>
