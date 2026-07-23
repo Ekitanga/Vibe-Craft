@@ -61,14 +61,18 @@
     <main>
       <section class="hero-slideshow" id="top" aria-roledescription="carousel" aria-label="New arrivals">
         <div class="hero-slides" id="heroSlides">
-          <a class="hero-slide is-active" href="find-your-setup.html">
+          <div class="hero-slide is-active" data-index="0">
             <img src="assets/outdoor-cinema.jpg" alt="Friends watching a movie together on a projector screen at sunset" />
             <div class="hero-slide-scrim"></div>
             <div class="hero-slide-info">
+              <div class="hero-slide-badges"><span class="hero-slide-badge">Welcome</span></div>
               <h2 class="hero-slide-title">See more in every room.</h2>
-              <p class="hero-slide-price">Thoughtful projector setups for movie nights and shared moments.</p>
+              <p class="hero-slide-desc">Thoughtful projector setups for movie nights, big ideas, and shared moments.</p>
+              <div class="hero-slide-actions">
+                <a class="button button-dark hero-slide-cta" href="find-your-setup.html">Find your setup <span>↗</span></a>
+              </div>
             </div>
-          </a>
+          </div>
         </div>
         <button class="hero-arrow hero-arrow-prev" id="heroPrev" type="button" aria-label="Previous product" hidden>‹</button>
         <button class="hero-arrow hero-arrow-next" id="heroNext" type="button" aria-label="Next product" hidden>›</button>

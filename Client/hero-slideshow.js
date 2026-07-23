@@ -15,6 +15,11 @@
   var priceFormatter = new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 });
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  var CART_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>';
+  var CHECK_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L15 7.5"/></svg>';
+
   var state = { slides: [], index: 0, timer: null, isPaused: false };
 
   function escapeHtml(value) {
@@ -26,20 +31,49 @@
       .replace(/'/g, "&#039;");
   }
 
-  function slideMarkup(product, index) {
+  function stockInfo(product) {
+    var stock = Number(product.stock || 0);
+    if (stock <= 0) return { label: "Out of stock", className: "is-out" };
+    if (stock <= 5) return { label: stock + " left in stock", className: "is-low" };
+    return { label: "In stock", className: "is-ok" };
+  }
+
+  function slideMarkup(product, index, categoryName) {
     var image = (product.images && product.images[0]) || "assets/outdoor-cinema.jpg";
+    var description = product.shortSummary || product.description || "";
+    var stock = stockInfo(product);
 
     return [
-      '<a class="hero-slide' + (index === 0 ? " is-active" : "") + '" href="product.html?id=' + encodeURIComponent(product.id) + '" data-index="' + index + '" aria-hidden="' + (index === 0 ? "false" : "true") + '">',
+      '<div class="hero-slide' + (index === 0 ? " is-active" : "") + '" data-index="' + index + '" aria-hidden="' + (index === 0 ? "false" : "true") + '">',
       '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index === 0 ? "eager" : "lazy") + '" />',
       '<div class="hero-slide-scrim"></div>',
       '<div class="hero-slide-info">',
+      '<div class="hero-slide-badges">',
+      categoryName ? '<span class="hero-slide-badge hero-slide-badge-outline">' + escapeHtml(categoryName) + "</span>" : "",
       '<span class="hero-slide-badge">New arrival</span>',
-      '<h2 class="hero-slide-title">' + escapeHtml(product.name) + "</h2>",
-      '<p class="hero-slide-price">' + priceFormatter.format(Number(product.price || 0)) + "</p>",
-      '<span class="button button-dark hero-slide-cta">View product <span>↗</span></span>',
       "</div>",
-      "</a>",
+      '<h2 class="hero-slide-title">' + escapeHtml(product.name) + "</h2>",
+      '<div class="hero-slide-meta">',
+      '<span class="hero-slide-meta-price">' + priceFormatter.format(Number(product.price || 0)) + "</span>",
+      '<span class="hero-slide-meta-dot" aria-hidden="true">•</span>',
+      '<span class="hero-slide-meta-stock ' + stock.className + '">' + stock.label + "</span>",
+      product.brand ? '<span class="hero-slide-meta-dot" aria-hidden="true">•</span><span class="hero-slide-meta-brand">' + escapeHtml(product.brand) + "</span>" : "",
+      "</div>",
+      description ? '<p class="hero-slide-desc">' + escapeHtml(description) + "</p>" : "",
+      '<div class="hero-slide-actions">',
+      '<a class="button button-dark hero-slide-cta" href="product.html?id=' + encodeURIComponent(product.id) + '">View product <span>↗</span></a>',
+      '<button class="hero-slide-quickadd" type="button" data-product-id="' +
+        escapeHtml(product.id) +
+        '" aria-label="Add ' +
+        escapeHtml(product.name) +
+        ' to cart"' +
+        (stock.className === "is-out" ? " disabled" : "") +
+        ">" +
+        CART_ICON +
+        "</button>",
+      "</div>",
+      "</div>",
+      "</div>",
     ].join("");
   }
 
@@ -208,17 +242,41 @@
         goTo(state.index + (dx < 0 ? 1 : -1));
       }
     });
+
+    slidesEl.addEventListener("click", function (event) {
+      var btn = event.target.closest(".hero-slide-quickadd");
+      if (!btn || btn.disabled || !window.VibecraftCart) return;
+
+      window.VibecraftCart.addItem(btn.getAttribute("data-product-id"), 1);
+
+      btn.classList.add("is-added");
+      btn.innerHTML = CHECK_ICON;
+      clearTimeout(btn._resetTimer);
+      btn._resetTimer = setTimeout(function () {
+        btn.classList.remove("is-added");
+        btn.innerHTML = CART_ICON;
+      }, 1600);
+    });
   }
 
   async function boot() {
     try {
-      var payload = await window.VibecraftApi.get("products");
-      var products = ((payload && payload.data) || []).slice(0, MAX_SLIDES);
+      var responses = await Promise.all([window.VibecraftApi.get("products"), window.VibecraftApi.get("categories")]);
+      var products = ((responses[0] && responses[0].data) || []).slice(0, MAX_SLIDES);
+      var categories = (responses[1] && responses[1].data) || [];
+      var categoryNameById = {};
+      categories.forEach(function (category) {
+        categoryNameById[category.id] = category.name;
+      });
 
       if (!products.length) return;
 
       state.slides = products;
-      slidesEl.innerHTML = products.map(slideMarkup).join("");
+      slidesEl.innerHTML = products
+        .map(function (product, index) {
+          return slideMarkup(product, index, categoryNameById[product.categoryId]);
+        })
+        .join("");
       progressEl.innerHTML = products.map(progressSegMarkup).join("");
 
       if (products.length > 1) {
