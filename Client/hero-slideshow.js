@@ -20,7 +20,16 @@
   var CHECK_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L15 7.5"/></svg>';
 
-  var state = { slides: [], index: 0, timer: null, isPaused: false };
+  var state = {
+    slides: [],
+    index: 0,
+    timer: null,
+    isPaused: false,
+    fillRatio: 0,
+    fillDuration: 0,
+    fillStartedAt: 0,
+    pausedRemainingMs: 0,
+  };
 
   function escapeHtml(value) {
     return String(value === undefined || value === null ? "" : value)
@@ -115,32 +124,47 @@
       if (!fill) return;
 
       fill.style.transitionDuration = "0s";
-      fill.style.width = i < index ? "100%" : "0%";
+      fill.style.transform = i < index ? "scaleX(1)" : "scaleX(0)";
     });
 
     state.index = index;
   }
 
-  function startAutoplay(durationOverrideMs) {
+  // Animates the active segment's fill from `ratio` (0-1) to fully filled over `durationMs`,
+  // using a compositor-only `transform` animation (not `width`) so it doesn't force layout on
+  // every frame — that was the cause of visible stutter. Position is tracked via timestamps
+  // rather than reading the rendered style back, which would itself force a layout flush.
+  function animateFillFrom(ratio, durationMs) {
+    state.fillRatio = ratio;
+    state.fillDuration = durationMs;
+    state.fillStartedAt = Date.now();
+
+    var fill = activeFillEl();
+    if (!fill) return;
+
+    if (reduceMotion) {
+      fill.style.transitionDuration = "0s";
+      fill.style.transform = "scaleX(1)";
+      return;
+    }
+
+    fill.style.transitionDuration = "0s";
+    fill.style.transform = "scaleX(" + ratio + ")";
+    // Force a reflow so the reset above applies before the transition below starts.
+    // eslint-disable-next-line no-unused-expressions
+    fill.offsetWidth;
+    fill.style.transitionDuration = durationMs + "ms";
+    fill.style.transform = "scaleX(1)";
+  }
+
+  function startAutoplay() {
     clearTimer();
     if (reduceMotion || state.slides.length <= 1 || state.isPaused) return;
 
-    var duration = durationOverrideMs || SLIDE_DURATION_MS;
-    var fill = activeFillEl();
-
-    if (fill) {
-      fill.style.transitionDuration = "0s";
-      fill.style.width = "0%";
-      // Force a reflow so the reset above applies before the transition below starts.
-      // eslint-disable-next-line no-unused-expressions
-      fill.offsetWidth;
-      fill.style.transitionDuration = duration + "ms";
-      fill.style.width = "100%";
-    }
-
+    animateFillFrom(0, SLIDE_DURATION_MS);
     state.timer = setTimeout(function () {
       goTo(state.index + 1);
-    }, duration);
+    }, SLIDE_DURATION_MS);
   }
 
   function goTo(nextIndex) {
@@ -156,14 +180,18 @@
     state.isPaused = true;
     clearTimer();
 
-    var fill = activeFillEl();
-    if (!fill) return;
+    var elapsed = Date.now() - state.fillStartedAt;
+    var progress = state.fillDuration > 0 ? Math.min(1, elapsed / state.fillDuration) : 1;
+    var overallRatio = Math.min(1, Math.max(0, state.fillRatio + (1 - state.fillRatio) * progress));
 
-    var currentWidth = parseFloat(window.getComputedStyle(fill).width) || 0;
-    var trackWidth = fill.parentElement.clientWidth || 1;
-    fill._frozenRatio = Math.min(1, currentWidth / trackWidth);
-    fill.style.transitionDuration = "0s";
-    fill.style.width = fill._frozenRatio * 100 + "%";
+    var fill = activeFillEl();
+    if (fill) {
+      fill.style.transitionDuration = "0s";
+      fill.style.transform = "scaleX(" + overallRatio + ")";
+    }
+
+    state.fillRatio = overallRatio;
+    state.pausedRemainingMs = Math.max(0, state.fillDuration - elapsed);
   }
 
   function resume() {
@@ -171,17 +199,8 @@
     state.isPaused = false;
     if (reduceMotion || state.slides.length <= 1) return;
 
-    var fill = activeFillEl();
-    if (!fill) {
-      startAutoplay();
-      return;
-    }
-
-    var ratio = fill._frozenRatio || 0;
-    var remainingMs = Math.max(400, (1 - ratio) * SLIDE_DURATION_MS);
-
-    fill.style.transitionDuration = remainingMs + "ms";
-    fill.style.width = "100%";
+    var remainingMs = Math.max(400, state.pausedRemainingMs || 0);
+    animateFillFrom(state.fillRatio, remainingMs);
 
     state.timer = setTimeout(function () {
       goTo(state.index + 1);
