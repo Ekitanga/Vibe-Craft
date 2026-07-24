@@ -227,8 +227,6 @@
       if (event.key === "ArrowRight") goTo(state.index + 1);
     });
 
-    sectionEl.addEventListener("mouseenter", pause);
-    sectionEl.addEventListener("mouseleave", resume);
     sectionEl.addEventListener("focusin", pause);
     sectionEl.addEventListener("focusout", resume);
 
