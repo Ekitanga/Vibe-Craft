@@ -154,7 +154,7 @@
         return [
           '<div class="order-card">',
           '<div class="order-card-head">',
-          '<span class="status-pill status-' + escapeHtml(order.status) + '">' + escapeHtml(order.status) + "</span>",
+          '<span><strong>' + escapeHtml(order.orderNumber || "Order") + '</strong><br><span class="status-pill status-' + escapeHtml(order.status) + '">' + escapeHtml(order.status) + "</span></span>",
           '<span class="order-card-date">' + date + "</span>",
           "</div>",
           '<ul class="order-card-items">' + itemsHtml + "</ul>",

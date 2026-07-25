@@ -42,9 +42,19 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   });
 });
 
+const updatePaymentVerification = asyncHandler(async (req, res) => {
+  const order = await orderService.updatePaymentVerification(req.params.id, req.body.verified);
+
+  res.json({
+    success: true,
+    data: order,
+  });
+});
+
 module.exports = {
   listOrders,
   listMyOrders,
   createOrder,
   updateOrderStatus,
+  updatePaymentVerification,
 };

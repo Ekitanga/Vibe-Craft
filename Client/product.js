@@ -107,6 +107,176 @@
     });
   }
 
+  function escapeHtml(value) {
+    return String(value === undefined || value === null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function relatedCardMarkup(product) {
+    var image = product.images && product.images[0];
+    var stock = Number(product.stock || 0);
+    var lowStock = stock > 0 && stock <= 3;
+    var outOfStock = stock <= 0;
+    var stockLabel = outOfStock ? "Out of stock" : lowStock ? stock + " left" : "In stock";
+
+    return [
+      '<a class="product-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
+      '<div class="product-card-media">',
+      image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' : "",
+      product.featured ? '<span class="product-card-badge">Featured</span>' : "",
+      "</div>",
+      '<div class="product-card-body">',
+      "<h3>" + escapeHtml(product.name) + "</h3>",
+      '<p class="product-card-summary">' + escapeHtml(product.shortSummary || product.description || "") + "</p>",
+      '<div class="product-card-footer">',
+      '<span class="product-card-price">' + formatPrice(product.price, product.currency) + "</span>",
+      '<span class="product-card-stock' + (lowStock ? " is-low" : "") + '">' + stockLabel + "</span>",
+      "</div>",
+      "</div>",
+      "</a>",
+    ].join("");
+  }
+
+  // Ranks candidates by how closely they match the current product: same category and
+  // brand matter most, then price closeness, then any shared headline specs — so the rail
+  // fills with genuinely comparable projectors rather than just "everything else."
+  function similarityScore(base, candidate) {
+    var score = 0;
+
+    if (candidate.categoryId && candidate.categoryId === base.categoryId) score += 50;
+    if (base.brand && candidate.brand && base.brand.toLowerCase() === candidate.brand.toLowerCase()) score += 20;
+
+    var basePrice = Number(base.price || 0);
+    var candidatePrice = Number(candidate.price || 0);
+    var priceDiff = Math.abs(basePrice - candidatePrice) / Math.max(basePrice, candidatePrice, 1);
+    score += Math.max(0, 30 * (1 - priceDiff));
+
+    var baseSpecs = base.specs || {};
+    var candidateSpecs = candidate.specs || {};
+    if (baseSpecs.resolution && baseSpecs.resolution === candidateSpecs.resolution) score += 10;
+    if (baseSpecs.brightness && baseSpecs.brightness === candidateSpecs.brightness) score += 5;
+
+    return score;
+  }
+
+  function initRelatedRail(wrapEl) {
+    var railEl = wrapEl.querySelector(".shop-rail");
+    var prevBtn = wrapEl.querySelector(".rail-arrow-prev");
+    var nextBtn = wrapEl.querySelector(".rail-arrow-next");
+
+    function updateArrows() {
+      var maxScroll = railEl.scrollWidth - railEl.clientWidth - 2;
+      prevBtn.disabled = railEl.scrollLeft <= 0;
+      nextBtn.disabled = railEl.scrollLeft >= maxScroll;
+    }
+
+    function cardStep() {
+      var card = railEl.querySelector(".product-card");
+      return card ? card.getBoundingClientRect().width + 16 : railEl.clientWidth * 0.8;
+    }
+
+    prevBtn.addEventListener("click", function () {
+      railEl.scrollBy({ left: -cardStep(), behavior: "smooth" });
+    });
+
+    nextBtn.addEventListener("click", function () {
+      railEl.scrollBy({ left: cardStep(), behavior: "smooth" });
+    });
+
+    railEl.addEventListener("scroll", updateArrows);
+
+    var dragState = null;
+
+    railEl.addEventListener("pointerdown", function (event) {
+      if (event.pointerType === "touch") return;
+      dragState = { pointerId: event.pointerId, startX: event.clientX, startScroll: railEl.scrollLeft, moved: false };
+    });
+
+    railEl.addEventListener("pointermove", function (event) {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+      var delta = event.clientX - dragState.startX;
+
+      if (!dragState.moved) {
+        if (Math.abs(delta) <= 10) return;
+        dragState.moved = true;
+        railEl.classList.add("is-dragging");
+        railEl.setPointerCapture(event.pointerId);
+      }
+
+      railEl.scrollLeft = dragState.startScroll - delta;
+    });
+
+    function endDrag(event) {
+      if (!dragState) return;
+
+      var moved = dragState.moved;
+      dragState = null;
+
+      if (moved) {
+        railEl.classList.remove("is-dragging");
+
+        if (railEl.hasPointerCapture(event.pointerId)) {
+          railEl.releasePointerCapture(event.pointerId);
+        }
+
+        railEl.addEventListener(
+          "click",
+          function (clickEvent) {
+            clickEvent.preventDefault();
+            clickEvent.stopPropagation();
+          },
+          { capture: true, once: true }
+        );
+      }
+    }
+
+    railEl.addEventListener("pointerup", endDrag);
+    railEl.addEventListener("pointercancel", endDrag);
+    railEl.addEventListener("pointerleave", function (event) {
+      if (dragState) endDrag(event);
+    });
+
+    window.addEventListener("resize", updateArrows);
+    updateArrows();
+  }
+
+  async function renderRelatedProducts(product) {
+    var section = document.getElementById("relatedProductsSection");
+
+    try {
+      var payload = await window.VibecraftApi.get("products");
+      var all = (payload && payload.data) || [];
+
+      var related = all
+        .filter(function (candidate) {
+          return candidate.id !== product.id;
+        })
+        .map(function (candidate) {
+          return { product: candidate, score: similarityScore(product, candidate) };
+        })
+        .sort(function (a, b) {
+          return b.score - a.score;
+        })
+        .slice(0, 4)
+        .map(function (entry) {
+          return entry.product;
+        });
+
+      if (!related.length) return;
+
+      document.getElementById("relatedProductsRail").innerHTML = related.map(relatedCardMarkup).join("");
+      section.hidden = false;
+      initRelatedRail(section.querySelector(".shop-rail-wrap"));
+    } catch (_error) {
+      // Related products are a nice-to-have; leave the section hidden on failure.
+    }
+  }
+
   function getCartQuantity(productId) {
     var existing = window.VibecraftCart.getItems().find(function (item) {
       return item.productId === productId;
@@ -242,6 +412,8 @@
 
       status.hidden = true;
       detail.hidden = false;
+
+      renderRelatedProducts(product);
     } catch (error) {
       status.textContent = error.message || "Could not load this product.";
     }

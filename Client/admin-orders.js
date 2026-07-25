@@ -5,6 +5,7 @@
   var state = { orders: [] };
   var priceFormatter = new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 });
   var dateFormatter = new Intl.DateTimeFormat("en-KE", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  var deliveryDateFormatter = new Intl.DateTimeFormat("en-KE", { month: "short", day: "numeric", year: "numeric" });
 
   var tableBody = document.getElementById("ordersTableBody");
   var orderCount = document.getElementById("orderCount");
@@ -41,9 +42,26 @@
       })
       .join("");
 
+    var delivery = order.delivery || {};
+    var deliveryAddress = [delivery.address, delivery.town, delivery.county].filter(Boolean).join(", ");
+    var preferredDateLabel = delivery.preferredDate ? deliveryDateFormatter.format(new Date(delivery.preferredDate)) : "";
+    var preferred = [preferredDateLabel, delivery.preferredTime].filter(Boolean).join(" · ");
+
     return [
       '<div class="order-detail">',
-      order.customer && order.customer.location ? "<div><strong>Location:</strong> " + escape(order.customer.location) + "</div>" : "",
+      order.orderNumber ? "<div><strong>Order number:</strong> " + escape(order.orderNumber) + "</div>" : "",
+      deliveryAddress
+        ? "<div><strong>Deliver to:</strong> " +
+          escape(deliveryAddress) +
+          (delivery.landmark ? " (near " + escape(delivery.landmark) + ")" : "") +
+          "</div>"
+        : order.customer && order.customer.location
+        ? "<div><strong>Location:</strong> " + escape(order.customer.location) + "</div>"
+        : "",
+      preferred ? "<div><strong>Preferred delivery:</strong> " + escape(preferred) + "</div>" : "",
+      order.mpesaCode
+        ? "<div><strong>M-Pesa code:</strong> " + escape(order.mpesaCode) + (order.paymentVerified ? " (verified)" : " (unverified)") + "</div>"
+        : "",
       items ? '<div><strong>Items</strong><ul class="order-detail-items">' + items + "</ul></div>" : "",
       answers ? '<div><strong>Inquiry</strong><ul class="order-detail-items">' + answers + "</ul></div>" : "",
       order.notes ? '<p class="order-detail-notes">Notes: ' + escape(order.notes) + "</p>" : "",
@@ -51,11 +69,35 @@
     ].join("");
   }
 
+  function paymentCell(order) {
+    var escape = window.VibecraftAdmin.escapeHtml;
+
+    if (order.paymentVerified) {
+      return (
+        '<button type="button" class="stock-pill stock-ok" data-payment-toggle="' +
+        escape(order.id) +
+        '" data-verified="true">✓ Verified</button>'
+      );
+    }
+
+    if (order.mpesaCode) {
+      return (
+        '<button type="button" class="stock-pill stock-low" data-payment-toggle="' +
+        escape(order.id) +
+        '" data-verified="false" title="Code: ' +
+        escape(order.mpesaCode) +
+        '">Unverified</button>'
+      );
+    }
+
+    return '<span class="stock-pill stock-out">No code</span>';
+  }
+
   function renderOrders() {
     orderCount.textContent = state.orders.length + (state.orders.length === 1 ? " order" : " orders");
 
     if (!state.orders.length) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No orders yet.</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="8">No orders yet.</td></tr>';
       return;
     }
 
@@ -72,12 +114,13 @@
           "<td>" + escape(customer.phone || customer.email || "—") + "</td>",
           "<td>" + (order.items ? order.items.length : 0) + " item(s)</td>",
           "<td>" + priceFormatter.format(Number(order.total || 0)) + "</td>",
+          "<td>" + paymentCell(order) + "</td>",
           '<td><select class="admin-status-select" data-order="' + escape(order.id) + '">' + statusOptions(order.status) + "</select></td>",
           "<td>" + date + "</td>",
           '<td><button type="button" data-toggle="' + escape(order.id) + '">Details</button></td>',
           "</tr>",
           '<tr class="order-detail-row is-hidden" data-detail-for="' + escape(order.id) + '">',
-          '<td colspan="7">' + detailMarkup(order) + "</td>",
+          '<td colspan="8">' + detailMarkup(order) + "</td>",
           "</tr>",
         ].join("");
       })
@@ -90,12 +133,28 @@
     renderOrders();
   }
 
-  tableBody.addEventListener("click", function (event) {
+  tableBody.addEventListener("click", async function (event) {
     var toggleId = event.target.getAttribute("data-toggle");
-    if (!toggleId) return;
+    if (toggleId) {
+      var row = tableBody.querySelector('[data-detail-for="' + toggleId + '"]');
+      if (row) row.classList.toggle("is-hidden");
+      return;
+    }
 
-    var row = tableBody.querySelector('[data-detail-for="' + toggleId + '"]');
-    if (row) row.classList.toggle("is-hidden");
+    var paymentToggleId = event.target.getAttribute("data-payment-toggle");
+    if (paymentToggleId) {
+      var button = event.target;
+      var nextVerified = button.getAttribute("data-verified") !== "true";
+      button.disabled = true;
+
+      try {
+        await window.VibecraftApi.patch("admin/orders/" + paymentToggleId + "/payment", { verified: nextVerified });
+        await loadOrders();
+      } catch (error) {
+        window.alert(error.message || "Could not update payment status.");
+        button.disabled = false;
+      }
+    }
   });
 
   tableBody.addEventListener("change", async function (event) {

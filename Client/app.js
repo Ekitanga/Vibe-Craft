@@ -1,6 +1,43 @@
 (function () {
   "use strict";
 
+  var STORAGE_KEY = "vibecraft_theme";
+  var header = document.querySelector(".site-header");
+
+  if (header) {
+    header.insertAdjacentHTML(
+      "beforeend",
+      '<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode" aria-pressed="false">' +
+        '<svg class="theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>' +
+        '<svg class="theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>' +
+        "</button>"
+    );
+
+    var themeToggle = document.getElementById("themeToggle");
+
+    var currentTheme = function () {
+      return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    };
+
+    var applyTheme = function (theme) {
+      if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      else document.documentElement.removeAttribute("data-theme");
+      themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
+    };
+
+    applyTheme(currentTheme());
+
+    themeToggle.addEventListener("click", function () {
+      var next = currentTheme() === "dark" ? "light" : "dark";
+      applyTheme(next);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, next);
+      } catch (_error) {
+        // Ignore storage errors (private browsing, etc.) - theme just won't persist.
+      }
+    });
+  }
+
   var menuToggle = document.getElementById("menuToggle");
   var siteNav = document.getElementById("siteNav");
   var menuBackdrop = document.getElementById("menuBackdrop");

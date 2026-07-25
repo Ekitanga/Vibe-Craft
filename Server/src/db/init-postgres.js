@@ -265,6 +265,15 @@ const initializePostgres = async () => {
 
   await db.query(schema);
   await db.query("ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS profile_image_url TEXT");
+  await db.query(`ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS delivery_county TEXT,
+    ADD COLUMN IF NOT EXISTS delivery_town TEXT,
+    ADD COLUMN IF NOT EXISTS delivery_address TEXT,
+    ADD COLUMN IF NOT EXISTS delivery_landmark TEXT,
+    ADD COLUMN IF NOT EXISTS preferred_delivery_date DATE,
+    ADD COLUMN IF NOT EXISTS preferred_delivery_time TEXT,
+    ADD COLUMN IF NOT EXISTS mpesa_code TEXT,
+    ADD COLUMN IF NOT EXISTS payment_verified BOOLEAN NOT NULL DEFAULT FALSE`);
 
   await db.withTransaction(async (client) => {
     if (resetRequested) {

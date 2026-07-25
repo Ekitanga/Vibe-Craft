@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Vibecraft admin product management." />
     <title>Vibecraft — Admin products</title>
@@ -13,12 +14,13 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img src="assets/vbc-logo.png" alt="Vibecraft254" /></a>
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
       <nav class="admin-nav" aria-label="Admin navigation">
         <a href="admin-dashboard.html">Dashboard</a>
         <a href="admin-products.html">Products</a>
         <a href="admin-orders.html">Orders</a>
         <a href="admin-customers.html">Customers</a>
+        <a href="admin-testimonials.html">Testimonials</a>
         <a href="admin-team.html">Team</a>
       </nav>
       <div class="admin-account">

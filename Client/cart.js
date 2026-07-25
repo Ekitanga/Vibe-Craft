@@ -1,11 +1,35 @@
 (function () {
   "use strict";
 
+  var KENYA_COUNTIES = [
+    "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita-Taveta", "Garissa", "Wajir", "Mandera",
+    "Marsabit", "Isiolo", "Meru", "Tharaka-Nithi", "Embu", "Kitui", "Machakos", "Makueni", "Nyandarua",
+    "Nyeri", "Kirinyaga", "Murang'a", "Kiambu", "Turkana", "West Pokot", "Samburu", "Trans Nzoia",
+    "Uasin Gishu", "Elgeyo-Marakwet", "Nandi", "Baringo", "Laikipia", "Nakuru", "Narok", "Kajiado",
+    "Kericho", "Bomet", "Kakamega", "Vihiga", "Bungoma", "Busia", "Siaya", "Kisumu", "Homa Bay",
+    "Migori", "Kisii", "Nyamira", "Nairobi",
+  ];
+
   var itemsList = document.getElementById("cartItemsList");
   var checkoutSubtotal = document.getElementById("checkoutSubtotal");
   var form = document.getElementById("checkoutForm");
   var checkoutStatus = document.getElementById("checkoutStatus");
+  var checkoutReceipt = document.getElementById("checkoutReceipt");
   var products = [];
+  var LAST_ORDER_KEY = "vibecraft_last_order";
+  var receiptDateFormatter = new Intl.DateTimeFormat("en-KE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  function escapeHtml(value) {
+    return String(value === undefined || value === null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   function formatPrice(amount, currency) {
     return new Intl.NumberFormat("en-KE", {
@@ -32,6 +56,80 @@
     checkoutSubtotal.textContent = formatPrice(amount);
   }
 
+  function renderReceipt(order) {
+    var customer = order.customer || {};
+    var delivery = order.delivery || {};
+    var orderNumber = order.orderNumber || "VC-" + String(order.id || "").replace(/-/g, "").slice(-8).toUpperCase();
+    var paid = Boolean(order.paymentVerified);
+    var paymentStatus = paid ? "Payment verified" : "Payment pending verification";
+    var address = [delivery.address, delivery.town, delivery.county].filter(Boolean).join(", ");
+    var preferredDelivery = [delivery.preferredDate, delivery.preferredTime].filter(Boolean).join(" · ");
+    var itemRows = (order.items || [])
+      .map(function (item) {
+        return [
+          "<tr><td>",
+          escapeHtml(item.name),
+          "<small>",
+          escapeHtml(item.quantity),
+          " × ",
+          formatPrice(item.unitPrice),
+          " each</small></td><td>",
+          formatPrice(item.lineTotal),
+          "</td></tr>",
+        ].join("");
+      })
+      .join("");
+    var whatsappText = [
+      "Hello Vibecraft, I am following up on order " + orderNumber + ".",
+      "Customer: " + (customer.name || ""),
+      "Total: " + formatPrice(order.total),
+      order.mpesaCode ? "M-Pesa code: " + order.mpesaCode : "Payment code: pending",
+    ].join("\n");
+
+    checkoutReceipt.innerHTML = [
+      '<div class="receipt-card">',
+      '<div class="receipt-head"><div><p class="eyebrow">Vibecraft254</p><h2>',
+      paid ? "Payment receipt" : "Order confirmation",
+      "</h2><p class=\"receipt-intro\">",
+      paid ? "Your payment has been verified." : "Your order is received and we will confirm payment shortly.",
+      '</p></div><span class="status-pill ',
+      paid ? "status-completed" : "status-pending",
+      '">',
+      paymentStatus,
+      "</span></div>",
+      '<div class="receipt-meta">',
+      '<div><span>Order number</span><strong>',
+      escapeHtml(orderNumber),
+      "</strong></div><div><span>Date</span><strong>",
+      escapeHtml(receiptDateFormatter.format(new Date(order.createdAt || Date.now()))),
+      "</strong></div><div><span>Customer</span><strong>",
+      escapeHtml(customer.name || "Customer"),
+      "</strong></div><div><span>Phone</span><strong>",
+      escapeHtml(customer.phone || "—"),
+      "</strong></div></div>",
+      '<div class="receipt-section"><h3>Items</h3><table class="receipt-items"><tbody>',
+      itemRows,
+      "</tbody></table></div>",
+      '<div class="receipt-section receipt-delivery"><h3>Delivery</h3>',
+      address ? "<p>" + escapeHtml(address) + (delivery.landmark ? " · Near " + escapeHtml(delivery.landmark) : "") + "</p>" : "",
+      preferredDelivery ? "<p>Preferred time: " + escapeHtml(preferredDelivery) + "</p>" : "",
+      "</div>",
+      '<div class="receipt-total"><span>Total</span><strong>',
+      formatPrice(order.total),
+      '</strong></div><p class="receipt-payment"><strong>Payment:</strong> ',
+      order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
+      '</p><div class="receipt-actions"><button class="button button-dark" type="button" id="printReceipt">Print / save PDF</button>',
+      '<a class="button button-outline" href="https://wa.me/254707333983?text=',
+      encodeURIComponent(whatsappText),
+      '" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div></div>',
+    ].join("");
+
+    checkoutReceipt.hidden = false;
+    document.getElementById("printReceipt").addEventListener("click", function () {
+      window.print();
+    });
+  }
+
   function renderCartLine(item, product) {
     var image = product.images && product.images[0];
 
@@ -56,6 +154,8 @@
 
   function render() {
     var cartItems = window.VibecraftCart.getItems();
+
+    if (cartItems.length) checkoutReceipt.hidden = true;
 
     if (!cartItems.length) {
       itemsList.innerHTML = '<p class="cart-empty-state">Your cart is empty. <a href="index.html#collection">Browse the range</a>.</p>';
@@ -108,25 +208,45 @@
     var cartItems = window.VibecraftCart.getItems();
     if (!cartItems.length) return;
 
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
     var submitButton = form.querySelector("button[type=submit]");
     checkoutStatus.textContent = "Placing your order...";
     checkoutStatus.classList.remove("is-error");
     submitButton.disabled = true;
 
     try {
-      await window.VibecraftApi.post("orders", {
+      var response = await window.VibecraftApi.post("orders", {
         customer: {
           name: document.getElementById("checkoutName").value.trim(),
           phone: document.getElementById("checkoutPhone").value.trim(),
           email: document.getElementById("checkoutEmail").value.trim() || undefined,
-          location: document.getElementById("checkoutLocation").value.trim() || undefined,
+        },
+        delivery: {
+          county: document.getElementById("checkoutCounty").value,
+          town: document.getElementById("checkoutTown").value.trim(),
+          address: document.getElementById("checkoutAddress").value.trim(),
+          landmark: document.getElementById("checkoutLandmark").value.trim() || undefined,
+          preferredDate: document.getElementById("checkoutDeliveryDate").value || undefined,
+          preferredTime: document.getElementById("checkoutDeliveryTime").value || undefined,
         },
         items: cartItems.map(function (item) {
           return { productId: item.productId, quantity: item.quantity };
         }),
         notes: document.getElementById("checkoutNotes").value.trim() || undefined,
+        mpesaCode: document.getElementById("checkoutMpesaCode").value.trim() || undefined,
       });
 
+      var order = response && response.data ? response.data : {};
+      try {
+        window.sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
+      } catch (_error) {
+        // The receipt still works for the current page if session storage is unavailable.
+      }
+      renderReceipt(order);
       window.VibecraftCart.clear();
       itemsList.innerHTML = '<p class="cart-empty-state">Thank you — your order has been placed. We’ll reach out shortly to confirm.</p>';
       form.hidden = true;
@@ -152,11 +272,39 @@
     }
   }
 
+  function populateCounties() {
+    var select = document.getElementById("checkoutCounty");
+    select.innerHTML =
+      '<option value="">Choose a county</option>' +
+      KENYA_COUNTIES.map(function (county) {
+        return '<option value="' + county + '">' + county + "</option>";
+      }).join("");
+  }
+
+  function setDeliveryDateMin() {
+    document.getElementById("checkoutDeliveryDate").min = new Date().toISOString().slice(0, 10);
+  }
+
+  function restoreLastReceipt() {
+    if (window.VibecraftCart.getItems().length) return;
+
+    try {
+      var saved = window.sessionStorage.getItem(LAST_ORDER_KEY);
+      if (saved) renderReceipt(JSON.parse(saved));
+    } catch (_error) {
+      // Ignore malformed or unavailable session data.
+    }
+  }
+
   async function boot() {
+    populateCounties();
+    setDeliveryDateMin();
+
     try {
       var payload = await window.VibecraftApi.get("products");
       products = (payload && payload.data) || [];
       render();
+      restoreLastReceipt();
       prefillFromAccount();
     } catch (_error) {
       itemsList.innerHTML = '<p class="cart-empty-state">Could not load your cart.</p>';

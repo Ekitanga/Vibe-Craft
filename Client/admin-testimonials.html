@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Vibecraft admin testimonial videos." />
+    <title>Vibecraft — Admin testimonials</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="admin-products.html">Products</a>
+        <a href="admin-orders.html">Orders</a>
+        <a href="admin-customers.html">Customers</a>
+        <a href="admin-testimonials.html">Testimonials</a>
+        <a href="admin-team.html">Team</a>
+      </nav>
+      <div class="admin-account">
+        <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu">
+          <span class="admin-account-avatar" id="adminAccountAvatar">A</span>
+          <span class="admin-account-caret">▾</span>
+        </button>
+        <div class="admin-account-menu" id="adminAccountMenu" role="menu" hidden>
+          <div class="admin-account-info">
+            <strong id="adminAccountMenuName">Admin</strong>
+            <span id="adminAccountEmail"></span>
+          </div>
+          <a class="admin-account-item" href="index.html" role="menuitem">View store</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="adminSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="admin-shell">
+        <div class="admin-topbar">
+          <div><p class="eyebrow">Admin</p><h1>Testimonials</h1></div>
+        </div>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h2 id="formHeading">New testimonial</h2>
+            <button class="button button-outline" id="resetFormButton" type="button" hidden>Cancel edit</button>
+          </div>
+
+          <form id="testimonialForm" novalidate>
+            <div class="form-grid">
+              <div class="field">
+                <label for="testimonialClientName">Client name</label>
+                <input id="testimonialClientName" required />
+              </div>
+              <div class="field">
+                <label for="testimonialClientLocation">Location <small>(optional)</small></label>
+                <input id="testimonialClientLocation" placeholder="e.g. Nairobi, Kenya" />
+              </div>
+              <div class="field">
+                <label for="testimonialSortOrder">Display order <small>(optional, lower shows first)</small></label>
+                <input id="testimonialSortOrder" type="number" min="0" value="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="testimonialQuote">Quote <small>(optional short blurb)</small></label>
+              <textarea id="testimonialQuote" placeholder="What did they say about it?"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="testimonialVideoFile">Video</label>
+              <div class="image-upload-row">
+                <label class="button button-outline image-upload-button" for="testimonialVideoFile">
+                  Upload video from device
+                  <input id="testimonialVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime" hidden />
+                </label>
+                <span class="form-status" id="testimonialVideoUploadStatus"></span>
+              </div>
+              <div class="image-preview-strip" id="testimonialVideoPreview"></div>
+            </div>
+
+            <label class="field-checkbox"><input id="testimonialPublished" type="checkbox" checked /> Published (visible on product pages)</label>
+
+            <button class="button button-dark auth-submit" type="submit">Save testimonial</button>
+            <p class="form-status" id="testimonialFormStatus" role="status"></p>
+          </form>
+        </section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h2>All testimonials</h2>
+            <span class="form-status" id="testimonialCount"></span>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Client</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Order</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="testimonialsTableBody">
+                <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+    <script src="admin-testimonials.js"></script>
+  </body>
+</html>

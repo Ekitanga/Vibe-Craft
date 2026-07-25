@@ -128,6 +128,14 @@ CREATE TABLE IF NOT EXISTS orders (
   notes TEXT,
   total INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
   currency TEXT NOT NULL DEFAULT 'KES',
+  delivery_county TEXT,
+  delivery_town TEXT,
+  delivery_address TEXT,
+  delivery_landmark TEXT,
+  preferred_delivery_date DATE,
+  preferred_delivery_time TEXT,
+  mpesa_code TEXT,
+  payment_verified BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -230,6 +238,22 @@ CREATE INDEX IF NOT EXISTS idx_customer_sessions_customer_account_id ON customer
 CREATE INDEX IF NOT EXISTS idx_customer_sessions_token_hash ON customer_sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_customer_sessions_expires_at ON customer_sessions(expires_at);
 
+CREATE TABLE IF NOT EXISTS testimonials (
+  id TEXT PRIMARY KEY,
+  client_name TEXT NOT NULL,
+  client_location TEXT,
+  quote TEXT,
+  video_url TEXT NOT NULL,
+  poster_url TEXT,
+  is_published BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_testimonials_sort_order ON testimonials(sort_order);
+CREATE INDEX IF NOT EXISTS idx_testimonials_is_published ON testimonials(is_published);
+
 DROP TRIGGER IF EXISTS trg_categories_updated_at ON categories;
 CREATE TRIGGER trg_categories_updated_at
 BEFORE UPDATE ON categories
@@ -263,6 +287,12 @@ EXECUTE FUNCTION set_updated_at();
 DROP TRIGGER IF EXISTS trg_customer_accounts_updated_at ON customer_accounts;
 CREATE TRIGGER trg_customer_accounts_updated_at
 BEFORE UPDATE ON customer_accounts
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_testimonials_updated_at ON testimonials;
+CREATE TRIGGER trg_testimonials_updated_at
+BEFORE UPDATE ON testimonials
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

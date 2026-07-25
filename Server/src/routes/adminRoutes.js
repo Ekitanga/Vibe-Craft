@@ -4,8 +4,9 @@ const customerAuthController = require("../controllers/customerAuthController");
 const productController = require("../controllers/productController");
 const orderController = require("../controllers/orderController");
 const uploadController = require("../controllers/uploadController");
+const testimonialController = require("../controllers/testimonialController");
 const { requireAdmin } = require("../middleware/adminAuth");
-const { uploadImages } = require("../middleware/upload");
+const { uploadImages, uploadVideo } = require("../middleware/upload");
 
 const router = express.Router();
 
@@ -22,9 +23,16 @@ router.patch("/products/:id", productController.updateProduct);
 router.delete("/products/:id", productController.deleteProduct);
 
 router.post("/uploads", uploadImages, uploadController.uploadImages);
+router.post("/uploads/video", uploadVideo, uploadController.uploadTestimonialVideo);
+
+router.get("/testimonials", testimonialController.listAllTestimonials);
+router.post("/testimonials", testimonialController.createTestimonial);
+router.patch("/testimonials/:id", testimonialController.updateTestimonial);
+router.delete("/testimonials/:id", testimonialController.deleteTestimonial);
 
 router.get("/orders", orderController.listOrders);
 router.patch("/orders/:id/status", orderController.updateOrderStatus);
+router.patch("/orders/:id/payment", orderController.updatePaymentVerification);
 
 router.get("/admins", adminAuthController.listAdmins);
 router.post("/admins", adminAuthController.inviteAdmin);

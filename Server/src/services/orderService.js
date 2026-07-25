@@ -5,8 +5,11 @@ const { getProductById } = require("./productService");
 
 const allowedStatuses = ["pending", "confirmed", "processing", "completed", "cancelled"];
 
+const getOrderNumber = (id) => `VC-${String(id || "").replace(/-/g, "").slice(-8).toUpperCase()}`;
+
 const mapOrderRow = (row) => ({
   id: row.id,
+  orderNumber: getOrderNumber(row.id),
   customer: {
     id: row.customer_id,
     name: row.customer_name,
@@ -19,6 +22,16 @@ const mapOrderRow = (row) => ({
   status: row.status,
   total: Number(row.total || 0),
   currency: row.currency,
+  delivery: {
+    county: row.delivery_county,
+    town: row.delivery_town,
+    address: row.delivery_address,
+    landmark: row.delivery_landmark,
+    preferredDate: row.preferred_delivery_date,
+    preferredTime: row.preferred_delivery_time,
+  },
+  mpesaCode: row.mpesa_code,
+  paymentVerified: row.payment_verified,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   inquiryAnswers: [],
@@ -30,6 +43,14 @@ const validateCustomer = (customer = {}) => {
 
   if (missingFields.length > 0) {
     throw new HttpError(400, "Missing required customer fields", missingFields);
+  }
+};
+
+const validateDelivery = (delivery = {}) => {
+  const missingFields = ["county", "town", "address"].filter((field) => !delivery[field]);
+
+  if (missingFields.length > 0) {
+    throw new HttpError(400, "Missing required delivery fields", missingFields);
   }
 };
 
@@ -138,6 +159,14 @@ const listOrders = async () => {
       o.status,
       o.total,
       o.currency,
+      o.delivery_county,
+      o.delivery_town,
+      o.delivery_address,
+      o.delivery_landmark,
+      o.preferred_delivery_date,
+      o.preferred_delivery_time,
+      o.mpesa_code,
+      o.payment_verified,
       o.created_at,
       o.updated_at,
       c.name AS customer_name,
@@ -162,6 +191,14 @@ const listOrdersForAccount = async ({ accountId, email }) => {
       o.status,
       o.total,
       o.currency,
+      o.delivery_county,
+      o.delivery_town,
+      o.delivery_address,
+      o.delivery_landmark,
+      o.preferred_delivery_date,
+      o.preferred_delivery_time,
+      o.mpesa_code,
+      o.payment_verified,
       o.created_at,
       o.updated_at,
       c.name AS customer_name,
@@ -189,6 +226,14 @@ const getOrderById = async (id) => {
       o.status,
       o.total,
       o.currency,
+      o.delivery_county,
+      o.delivery_town,
+      o.delivery_address,
+      o.delivery_landmark,
+      o.preferred_delivery_date,
+      o.preferred_delivery_time,
+      o.mpesa_code,
+      o.payment_verified,
       o.created_at,
       o.updated_at,
       c.name AS customer_name,
@@ -212,29 +257,43 @@ const getOrderById = async (id) => {
 
 const createOrder = async (payload, customerAccountId) => {
   validateCustomer(payload.customer);
+  validateDelivery(payload.delivery);
 
   const items = await normalizeItems(payload.items);
   const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const customerId = crypto.randomUUID();
   const orderId = crypto.randomUUID();
+  const delivery = payload.delivery || {};
+  const location = payload.customer.location || [delivery.town, delivery.county].filter(Boolean).join(", ");
 
   await db.withTransaction(async (client) => {
     await client.query(
       `INSERT INTO customers (id, name, phone, email, location)
        VALUES ($1, $2, $3, $4, $5)`,
-      [
-        customerId,
-        payload.customer.name,
-        payload.customer.phone,
-        payload.customer.email || null,
-        payload.customer.location || null,
-      ]
+      [customerId, payload.customer.name, payload.customer.phone, payload.customer.email || null, location || null]
     );
 
     await client.query(
-      `INSERT INTO orders (id, customer_id, customer_account_id, notes, status, total, currency)
-       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES')`,
-      [orderId, customerId, customerAccountId || null, payload.notes || "", total]
+      `INSERT INTO orders (
+        id, customer_id, customer_account_id, notes, status, total, currency,
+        delivery_county, delivery_town, delivery_address, delivery_landmark,
+        preferred_delivery_date, preferred_delivery_time, mpesa_code
+      )
+       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        orderId,
+        customerId,
+        customerAccountId || null,
+        payload.notes || "",
+        total,
+        delivery.county,
+        delivery.town,
+        delivery.address,
+        delivery.landmark || null,
+        delivery.preferredDate || null,
+        delivery.preferredTime || null,
+        payload.mpesaCode || null,
+      ]
     );
 
     for (const item of items) {
@@ -368,9 +427,23 @@ const updateOrderStatus = async (id, status) => {
   return getOrderById(id);
 };
 
+const updatePaymentVerification = async (id, verified) => {
+  const result = await db.query(`UPDATE orders SET payment_verified = $1 WHERE id = $2 RETURNING id`, [
+    Boolean(verified),
+    id,
+  ]);
+
+  if (!result.rows[0]) {
+    throw new HttpError(404, "Order not found");
+  }
+
+  return getOrderById(id);
+};
+
 module.exports = {
   listOrders,
   listOrdersForAccount,
   createOrder,
   updateOrderStatus,
+  updatePaymentVerification,
 };

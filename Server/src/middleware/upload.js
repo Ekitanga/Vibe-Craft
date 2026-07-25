@@ -5,6 +5,9 @@ const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "im
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILES = 8;
 
+const ALLOWED_VIDEO_MIME_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+const MAX_VIDEO_FILE_SIZE = 80 * 1024 * 1024;
+
 const storage = multer.memoryStorage();
 
 const fileFilter = (_req, file, cb) => {
@@ -19,6 +22,20 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+});
+
+const videoFileFilter = (_req, file, cb) => {
+  if (!ALLOWED_VIDEO_MIME_TYPES.has(file.mimetype)) {
+    cb(new HttpError(400, "Only MP4, WEBM, or MOV videos are allowed."));
+    return;
+  }
+  cb(null, true);
+};
+
+const videoUpload = multer({
+  storage,
+  fileFilter: videoFileFilter,
+  limits: { fileSize: MAX_VIDEO_FILE_SIZE, files: 1 },
 });
 
 const uploadImages = (req, res, next) => {
@@ -65,4 +82,24 @@ const uploadAvatar = (req, res, next) => {
   });
 };
 
-module.exports = { uploadAvatar, uploadImages };
+const uploadVideo = (req, res, next) => {
+  videoUpload.single("video")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        next(new HttpError(400, "The video must be 80MB or smaller."));
+        return;
+      }
+      next(new HttpError(400, error.message));
+      return;
+    }
+
+    next(error);
+  });
+};
+
+module.exports = { uploadAvatar, uploadImages, uploadVideo };
