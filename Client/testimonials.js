@@ -12,11 +12,31 @@
       .replace(/'/g, "&#039;");
   }
 
+  function writtenFrameMarkup(testimonial) {
+    return [
+      '<div class="testimonial-written-frame">',
+      testimonial.quote ? '<p class="testimonial-written-quote">' + escapeHtml(testimonial.quote) + "</p>" : "",
+      "</div>",
+    ].join("");
+  }
+
+  function writtenCardMarkup(testimonial, index) {
+    return [
+      '<div class="testimonial-slide" data-index="' + index + '">',
+      writtenFrameMarkup(testimonial),
+      "</div>",
+    ].join("");
+  }
+
   function cardMarkup(testimonial, index) {
+    if (testimonial.reviewType === "written" || !testimonial.videoUrl) {
+      return writtenCardMarkup(testimonial, index);
+    }
+
     return [
       '<div class="testimonial-slide" data-index="' + index + '">',
       '<div class="testimonial-video-frame">',
-      '<video class="testimonial-video" controls playsinline preload="none"' +
+      '<video class="testimonial-video" controls playsinline preload="metadata"' +
         (testimonial.posterUrl ? ' poster="' + escapeHtml(testimonial.posterUrl) + '"' : "") +
         ">",
       '<source src="' + escapeHtml(testimonial.videoUrl) + '" />',
@@ -26,11 +46,18 @@
     ].join("");
   }
 
+  function replaceWithWrittenReview(slide, testimonial) {
+    testimonial.reviewType = "written";
+    testimonial.videoUrl = null;
+    testimonial.posterUrl = null;
+    slide.innerHTML = writtenFrameMarkup(testimonial);
+  }
+
   function metaMarkup(testimonial) {
     if (!testimonial.quote && !testimonial.clientName) return "";
 
     return (
-      (testimonial.quote ? '<p class="testimonial-quote">' + escapeHtml(testimonial.quote) + "</p>" : "") +
+      (testimonial.reviewType !== "written" && testimonial.quote ? '<p class="testimonial-quote">' + escapeHtml(testimonial.quote) + "</p>" : "") +
       '<p class="testimonial-client">' +
       escapeHtml(testimonial.clientName) +
       (testimonial.clientLocation ? ", " + escapeHtml(testimonial.clientLocation) : "") +
@@ -48,6 +75,24 @@
 
     stackEl.innerHTML = testimonials.map(cardMarkup).join("");
     metaEl.innerHTML = metaMarkup(testimonials[0]);
+
+    stackEl.querySelectorAll("video").forEach(function (video) {
+      video.addEventListener("error", function () {
+        var slide = video.closest(".testimonial-slide");
+        var failedIndex = slide ? Number(slide.getAttribute("data-index")) : -1;
+        var failedTestimonial = testimonials[failedIndex];
+
+        if (!slide || !failedTestimonial) return;
+
+        if (failedTestimonial.quote) {
+          replaceWithWrittenReview(slide, failedTestimonial);
+          if (failedIndex === index) metaEl.innerHTML = metaMarkup(failedTestimonial);
+        } else {
+          slide.hidden = true;
+          if (failedIndex === index) root.hidden = true;
+        }
+      });
+    });
 
     dotsEl.innerHTML = testimonials
       .map(function (_testimonial, i) {

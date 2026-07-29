@@ -11,6 +11,8 @@
     "db:reset": "node --no-warnings src/db/init.js --reset",
     "db:pg:init": "node src/db/init-postgres.js",
     "db:pg:reset": "node src/db/init-postgres.js --reset",
+    "db:pg:import-live": "node src/db/import-live-products.js",
+    "db:pg:migrate-testimonials": "node src/db/migrate-testimonials.js",
     "admin:create": "node src/db/create-admin.js"
   },
   "keywords": [

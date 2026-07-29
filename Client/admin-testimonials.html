@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Vibecraft admin testimonial videos." />
+    <meta name="description" content="Vibecraft admin customer reviews." />
     <title>Vibecraft — Admin testimonials</title>
     <link rel="icon" href="assets/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
@@ -68,12 +68,20 @@
               </div>
             </div>
 
-            <div class="field">
-              <label for="testimonialQuote">Quote <small>(optional short blurb)</small></label>
-              <textarea id="testimonialQuote" placeholder="What did they say about it?"></textarea>
+            <fieldset class="field testimonial-type-field">
+              <legend>Review type</legend>
+              <div class="testimonial-type-options">
+                <label class="field-checkbox"><input type="radio" name="testimonialReviewType" value="video" checked /> Video review</label>
+                <label class="field-checkbox"><input type="radio" name="testimonialReviewType" value="written" /> Written review</label>
+              </div>
+            </fieldset>
+
+            <div class="field written-review-field" id="testimonialWrittenReviewField" hidden>
+              <label for="testimonialQuote">Written review</label>
+              <textarea id="testimonialQuote" placeholder="What did the client say about Vibecraft?"></textarea>
             </div>
 
-            <div class="field">
+            <div class="field video-review-field" id="testimonialVideoField">
               <label for="testimonialVideoFile">Video</label>
               <div class="image-upload-row">
                 <label class="button button-outline image-upload-button" for="testimonialVideoFile">
@@ -103,6 +111,7 @@
                 <tr>
                   <th></th>
                   <th>Client</th>
+                  <th>Type</th>
                   <th>Location</th>
                   <th>Status</th>
                   <th>Order</th>
@@ -110,7 +119,7 @@
                 </tr>
               </thead>
               <tbody id="testimonialsTableBody">
-                <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+                <tr class="empty-row"><td colspan="7">Loading…</td></tr>
               </tbody>
             </table>
           </div>

@@ -12,6 +12,9 @@
   var videoFileInput = document.getElementById("testimonialVideoFile");
   var videoUploadStatus = document.getElementById("testimonialVideoUploadStatus");
   var videoPreview = document.getElementById("testimonialVideoPreview");
+  var writtenReviewField = document.getElementById("testimonialWrittenReviewField");
+  var videoField = document.getElementById("testimonialVideoField");
+  var reviewTypeInputs = document.querySelectorAll('input[name="testimonialReviewType"]');
 
   function setFormStatus(message, isError) {
     formStatus.textContent = message || "";
@@ -25,11 +28,29 @@
     }
 
     videoPreview.innerHTML =
-      '<div class="image-preview-thumb">' +
-      '<img src="' + window.VibecraftAdmin.escapeHtml(state.pendingPosterUrl || "") + '" alt="" loading="lazy" />' +
+      '<div class="image-preview-thumb testimonial-video-preview">' +
+      (state.pendingPosterUrl
+        ? '<img src="' + window.VibecraftAdmin.escapeHtml(state.pendingPosterUrl) + '" alt="" loading="lazy" />'
+        : '<span>Video</span>') +
       '<button type="button" class="image-preview-remove" id="testimonialVideoRemove" aria-label="Remove this video">✕</button>' +
       "</div>";
   }
+
+  function getReviewType() {
+    var selected = document.querySelector('input[name="testimonialReviewType"]:checked');
+    return selected ? selected.value : "video";
+  }
+
+  function syncReviewType() {
+    var isWritten = getReviewType() === "written";
+    writtenReviewField.hidden = !isWritten;
+    videoField.hidden = isWritten;
+    document.getElementById("testimonialQuote").required = isWritten;
+  }
+
+  reviewTypeInputs.forEach(function (input) {
+    input.addEventListener("change", syncReviewType);
+  });
 
   videoPreview.addEventListener("click", function (event) {
     if (event.target.id !== "testimonialVideoRemove") return;
@@ -72,7 +93,7 @@
     testimonialCount.textContent = state.testimonials.length + (state.testimonials.length === 1 ? " testimonial" : " testimonials");
 
     if (!state.testimonials.length) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">No testimonials yet.</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No testimonials yet.</td></tr>';
       return;
     }
 
@@ -80,12 +101,15 @@
       .map(function (testimonial) {
         var thumb = testimonial.posterUrl
           ? '<img class="admin-table-thumb" src="' + window.VibecraftAdmin.escapeHtml(testimonial.posterUrl) + '" alt="" loading="lazy" />'
+          : testimonial.reviewType === "written"
+          ? '<div class="testimonial-table-quote">' + window.VibecraftAdmin.escapeHtml(testimonial.quote || "Written review") + "</div>"
           : "";
 
         return [
           "<tr>",
           "<td>" + thumb + "</td>",
           "<td>" + window.VibecraftAdmin.escapeHtml(testimonial.clientName) + "</td>",
+          "<td>" + window.VibecraftAdmin.escapeHtml(testimonial.reviewType === "written" ? "Written" : "Video") + "</td>",
           "<td>" + window.VibecraftAdmin.escapeHtml(testimonial.clientLocation || "—") + "</td>",
           "<td>" + statusBadge(testimonial) + "</td>",
           "<td>" + testimonial.sortOrder + "</td>",
@@ -114,6 +138,8 @@
     resetFormButton.hidden = true;
     document.getElementById("testimonialSortOrder").value = 0;
     document.getElementById("testimonialPublished").checked = true;
+    document.querySelector('input[name="testimonialReviewType"][value="video"]').checked = true;
+    syncReviewType();
     setFormStatus("");
     videoUploadStatus.textContent = "";
     videoUploadStatus.classList.remove("is-error");
@@ -122,7 +148,7 @@
 
   function fillFormForEdit(testimonial) {
     state.editingId = testimonial.id;
-    state.pendingVideoUrl = testimonial.videoUrl;
+    state.pendingVideoUrl = testimonial.videoUrl || null;
     state.pendingPosterUrl = testimonial.posterUrl;
     formHeading.textContent = "Edit testimonial";
     resetFormButton.hidden = false;
@@ -132,6 +158,8 @@
     document.getElementById("testimonialSortOrder").value = testimonial.sortOrder != null ? testimonial.sortOrder : 0;
     document.getElementById("testimonialQuote").value = testimonial.quote || "";
     document.getElementById("testimonialPublished").checked = Boolean(testimonial.isPublished);
+    document.querySelector('input[name="testimonialReviewType"][value="' + (testimonial.reviewType || (testimonial.videoUrl ? "video" : "written")) + '"]').checked = true;
+    syncReviewType();
     renderVideoPreview();
 
     formHeading.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -140,8 +168,16 @@
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    if (!state.pendingVideoUrl) {
+    var reviewType = getReviewType();
+    var quote = document.getElementById("testimonialQuote").value.trim();
+
+    if (reviewType === "video" && !state.pendingVideoUrl) {
       setFormStatus("Upload a video first.", true);
+      return;
+    }
+
+    if (reviewType === "written" && !quote) {
+      setFormStatus("Enter the written review first.", true);
       return;
     }
 
@@ -149,9 +185,10 @@
     var payload = {
       clientName: document.getElementById("testimonialClientName").value.trim(),
       clientLocation: document.getElementById("testimonialClientLocation").value.trim(),
-      quote: document.getElementById("testimonialQuote").value.trim(),
-      videoUrl: state.pendingVideoUrl,
-      posterUrl: state.pendingPosterUrl,
+      quote: quote,
+      reviewType: reviewType,
+      videoUrl: reviewType === "video" ? state.pendingVideoUrl : null,
+      posterUrl: reviewType === "video" ? state.pendingPosterUrl : null,
       isPublished: document.getElementById("testimonialPublished").checked,
       sortOrder: Number(document.getElementById("testimonialSortOrder").value || 0),
     };
@@ -217,7 +254,7 @@
     try {
       await loadTestimonials();
     } catch (error) {
-      tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Could not load testimonials.</td></tr>';
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="7">Could not load testimonials.</td></tr>';
     }
   }
 

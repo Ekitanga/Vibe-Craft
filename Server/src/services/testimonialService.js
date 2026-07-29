@@ -9,6 +9,7 @@ const mapTestimonialRow = (row) => ({
   clientName: row.client_name,
   clientLocation: row.client_location,
   quote: row.quote,
+  reviewType: row.review_type || (row.video_url ? "video" : "written"),
   videoUrl: row.video_url,
   posterUrl: row.poster_url,
   isPublished: row.is_published,
@@ -43,9 +44,21 @@ const validatePayload = (payload, { partial } = {}) => {
     }
   }
 
-  if (!partial || payload.videoUrl !== undefined) {
+  const reviewType = payload.reviewType || (payload.videoUrl ? "video" : "written");
+
+  if (!['video', 'written'].includes(reviewType)) {
+    throw new HttpError(400, "reviewType must be video or written");
+  }
+
+  if (reviewType === "video" && (!partial || payload.videoUrl !== undefined)) {
     if (!payload.videoUrl || !String(payload.videoUrl).trim()) {
-      throw new HttpError(400, "videoUrl is required");
+      throw new HttpError(400, "videoUrl is required for video testimonials");
+    }
+  }
+
+  if (reviewType === "written" && (!partial || payload.quote !== undefined)) {
+    if (!payload.quote || !String(payload.quote).trim()) {
+      throw new HttpError(400, "quote is required for written reviews");
     }
   }
 };
@@ -54,18 +67,20 @@ const createTestimonial = async (payload) => {
   validatePayload(payload);
 
   const id = crypto.randomUUID();
+  const reviewType = payload.reviewType || "video";
 
   const result = await db.query(
-    `INSERT INTO testimonials (id, client_name, client_location, quote, video_url, poster_url, is_published, sort_order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO testimonials (id, client_name, client_location, quote, review_type, video_url, poster_url, is_published, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       id,
       payload.clientName.trim(),
       payload.clientLocation || null,
       payload.quote || null,
-      payload.videoUrl,
-      payload.posterUrl || null,
+      reviewType,
+      reviewType === "video" ? payload.videoUrl : null,
+      reviewType === "video" ? payload.posterUrl || null : null,
       payload.isPublished === undefined ? true : toBoolean(payload.isPublished),
       Number(payload.sortOrder || 0),
     ]
@@ -82,21 +97,36 @@ const updateTestimonial = async (id, payload) => {
     clientName: payload.clientName === undefined ? existing.clientName : payload.clientName,
     clientLocation: payload.clientLocation === undefined ? existing.clientLocation : payload.clientLocation,
     quote: payload.quote === undefined ? existing.quote : payload.quote,
+    reviewType: payload.reviewType === undefined ? existing.reviewType : payload.reviewType,
     videoUrl: payload.videoUrl === undefined ? existing.videoUrl : payload.videoUrl,
     posterUrl: payload.posterUrl === undefined ? existing.posterUrl : payload.posterUrl,
     isPublished: payload.isPublished === undefined ? existing.isPublished : toBoolean(payload.isPublished),
     sortOrder: payload.sortOrder === undefined ? existing.sortOrder : Number(payload.sortOrder),
   };
 
+  if (merged.reviewType === "written") {
+    merged.videoUrl = null;
+    merged.posterUrl = null;
+  }
+
+  if (merged.reviewType === "video" && !merged.videoUrl) {
+    throw new HttpError(400, "videoUrl is required for video testimonials");
+  }
+
+  if (merged.reviewType === "written" && !merged.quote) {
+    throw new HttpError(400, "quote is required for written reviews");
+  }
+
   const result = await db.query(
     `UPDATE testimonials SET
        client_name = $2,
        client_location = $3,
        quote = $4,
-       video_url = $5,
-       poster_url = $6,
-       is_published = $7,
-       sort_order = $8
+       review_type = $5,
+       video_url = $6,
+       poster_url = $7,
+       is_published = $8,
+       sort_order = $9
      WHERE id = $1
      RETURNING *`,
     [
@@ -104,7 +134,8 @@ const updateTestimonial = async (id, payload) => {
       merged.clientName.trim(),
       merged.clientLocation || null,
       merged.quote || null,
-      merged.videoUrl,
+      merged.reviewType,
+      merged.videoUrl || null,
       merged.posterUrl || null,
       merged.isPublished,
       merged.sortOrder,
