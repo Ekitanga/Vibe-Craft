@@ -554,12 +554,16 @@ h2 { max-width: 620px; margin-bottom: 0; font-size: clamp(42px, 6vw, 70px); lett
   overflow: visible;
   isolation: isolate;
   white-space: nowrap;
+  gap: 12px;
+  padding: 15px 14px 15px 18px;
   border: 1px solid rgba(255, 255, 255, .62) !important;
   background: rgba(255, 255, 255, .68) !important;
   color: var(--ink) !important;
   box-shadow: 0 10px 28px rgba(17, 18, 15, .18), 0 0 16px 3px rgba(204, 51, 85, .22), inset 0 1px 0 rgba(255, 255, 255, .72);
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  animation: ai-button-bounce 1.4s ease-in-out infinite;
+  transform-origin: center bottom;
   transition: box-shadow .2s ease;
 }
 :root[data-theme="dark"] .find-setup-link {
@@ -611,9 +615,18 @@ body.menu-open .find-setup-link {
 }
 .find-setup-link:hover { box-shadow: 0 0 20px 4px rgba(204, 51, 85, .32), 0 0 34px 10px rgba(255, 210, 213, .24); }
 .find-setup-link:hover::before { opacity: 1; }
+@keyframes ai-button-bounce {
+  0%, 100% { transform: translateY(0); }
+  15% { transform: translateY(-8px); }
+  30% { transform: translateY(0); }
+  45% { transform: translateY(-6px); }
+  60% { transform: translateY(0); }
+  75% { transform: translateY(-3px); }
+  90% { transform: translateY(0); }
+}
 @keyframes ai-glow-spin { to { --glow-angle: 360deg; } }
 @keyframes ai-glow-pulse { 0%, 100% { opacity: .65; } 50% { opacity: .9; } }
-@media (prefers-reduced-motion: reduce) { .find-setup-link::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .find-setup-link, .find-setup-link::before { animation: none; } }
 @media (max-width: 560px) { .find-setup-link { right: 16px; max-width: calc(100vw - 32px); } }
 
 .ai-page { padding: 56px 0 110px; }
@@ -2588,6 +2601,24 @@ body:has(.ai-page) main { min-height: calc(100vh - 82px); display: flex; align-i
 .room-tile-outdoor { background-image: url("assets/outdoor-cinema.jpg"); }
 .showcase-contact { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding-top: 78px; padding-bottom: 108px; border-top: 1px solid var(--line); }
 .showcase-contact h2 { font-size: clamp(36px, 5vw, 64px); }
+
+/* Keep the complete product image visible in every product presentation. */
+.product-card-media img,
+.showcase-card .product-card-media img,
+.product-detail-image-frame img,
+.product-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.product-card-media,
+.product-detail-image-frame,
+.product-thumb {
+  background: var(--paper);
+}
 .showcase-contact-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; }
 .showcase-contact-actions .button { flex: none; }
 .button-outline { border: 1px solid var(--text); background: transparent; color: var(--text); }
