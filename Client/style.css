@@ -629,6 +629,19 @@ body.menu-open .find-setup-link {
 @media (prefers-reduced-motion: reduce) { .find-setup-link, .find-setup-link::before { animation: none; } }
 @media (max-width: 560px) { .find-setup-link { right: 16px; max-width: calc(100vw - 32px); } }
 
+/* Keep the AI CTA visually opposite to the active page theme. */
+:root:not([data-theme="dark"]) .find-setup-link {
+  border-color: var(--ink) !important;
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+
+:root[data-theme="dark"] .find-setup-link {
+  border-color: #fff !important;
+  background: #fff !important;
+  color: var(--ink) !important;
+}
+
 .ai-page { padding: 56px 0 110px; }
 .ai-intro { max-width: 560px; margin: 0 auto 40px; text-align: center; }
 .ai-intro h1 { margin: 0 auto 12px; }
