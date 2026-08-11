@@ -22,6 +22,14 @@
     return priceFormatters[code].format(Number(amount || 0));
   }
 
+  function priceMarkup(product) {
+    var price = Number(product.price || 0);
+    var compareAtPrice = Number(product.compareAtPrice || 0);
+    if (compareAtPrice <= price) return '<span class="price-current">' + formatPrice(price, product.currency) + "</span>";
+    var discountPercent = Math.round((1 - price / compareAtPrice) * 100);
+    return '<span class="price-stack"><span class="price-current">' + formatPrice(price, product.currency) + '</span><del class="price-compare">' + formatPrice(compareAtPrice, product.currency) + '</del><span class="price-discount">-' + discountPercent + '%</span></span>';
+  }
+
   function escapeHtml(value) {
     return String(value === undefined || value === null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -78,7 +86,7 @@
       "<h3>" + escapeHtml(product.name) + "</h3>",
       '<p class="product-card-summary">' + escapeHtml(product.shortSummary || product.description || "") + "</p>",
       '<div class="product-card-footer">',
-      '<span class="product-card-price">' + formatPrice(product.price, product.currency) + "</span>",
+      '<span class="product-card-price">' + priceMarkup(product) + "</span>",
       '<span class="product-card-stock' + (lowStock ? " is-low" : "") + '">' + stockLabel + "</span>",
       "</div>",
       "</div>",

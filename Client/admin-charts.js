@@ -93,7 +93,9 @@ window.VibecraftCharts = (function () {
     var rowHeight = barThickness + rowGap;
     var labelWidth = opts.labelWidth || 132;
     var valueWidth = opts.valueWidth || 84;
-    var width = 560;
+    // Keep the SVG's coordinate system close to its rendered width on phones.
+    // Scaling a 560px canvas down to a ~290px card makes labels unreadably tiny.
+    var width = Math.max(360, container.clientWidth || 560);
     var chartWidth = width - labelWidth - valueWidth;
     var height = rows.length * rowHeight + rowGap / 2;
     var maxValue = niceMax(Math.max.apply(null, rows.map(function (row) { return row.value; })));
@@ -154,7 +156,8 @@ window.VibecraftCharts = (function () {
       return;
     }
 
-    var width = 640;
+    // Use a compact mobile canvas so SVG labels stay legible at narrow widths.
+    var width = Math.max(360, container.clientWidth || 640);
     var height = 220;
     var padding = { top: 20, right: 16, bottom: 28, left: 46 };
     var chartWidth = width - padding.left - padding.right;
@@ -248,8 +251,65 @@ window.VibecraftCharts = (function () {
     container.appendChild(svg);
   }
 
+  function renderRankedList(container, rows, opts) {
+    opts = opts || {};
+    container.textContent = "";
+
+    if (!rows.length) {
+      renderEmpty(container, opts.emptyMessage || "No data yet.");
+      return;
+    }
+
+    var maxValue = Math.max.apply(null, rows.map(function (row) { return row.value; })) || 1;
+    var list = document.createElement("ol");
+    list.className = "ranked-list";
+    list.setAttribute("aria-label", opts.ariaLabel || "Ranked list");
+
+    rows.forEach(function (row, index) {
+      var item = document.createElement("li");
+      item.className = "ranked-item";
+
+      var head = document.createElement("div");
+      head.className = "ranked-item-head";
+
+      var rank = document.createElement("span");
+      rank.className = "ranked-item-rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+
+      var label = document.createElement("strong");
+      label.className = "ranked-item-label";
+      label.textContent = row.label;
+
+      var value = document.createElement("span");
+      value.className = "ranked-item-value";
+      value.textContent = row.displayValue != null ? row.displayValue : String(row.value);
+
+      head.appendChild(rank);
+      head.appendChild(label);
+      head.appendChild(value);
+
+      var track = document.createElement("div");
+      track.className = "ranked-item-track";
+      track.setAttribute("role", "img");
+      track.setAttribute("aria-label", row.label + ": " + value.textContent);
+
+      var fill = document.createElement("span");
+      fill.className = "ranked-item-fill";
+      fill.style.width = Math.max(0, (Number(row.value) / maxValue) * 100) + "%";
+      if (row.color) fill.style.background = row.color;
+      track.appendChild(fill);
+
+      item.appendChild(head);
+      item.appendChild(track);
+      list.appendChild(item);
+    });
+
+    container.appendChild(list);
+  }
+
   return {
     renderBarChart: renderBarChart,
     renderLineChart: renderLineChart,
+    renderRankedList: renderRankedList,
   };
 })();

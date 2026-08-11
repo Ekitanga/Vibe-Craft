@@ -155,11 +155,9 @@
       valueWidth: 40,
     });
 
-    window.VibecraftCharts.renderBarChart(document.getElementById("chartTopProducts"), analytics.topProducts, {
+    window.VibecraftCharts.renderRankedList(document.getElementById("chartTopProducts"), analytics.topProducts, {
       ariaLabel: "Top products by units sold",
       emptyMessage: "No sales yet.",
-      labelWidth: 150,
-      valueWidth: 70,
     });
 
     window.VibecraftCharts.renderBarChart(document.getElementById("chartCategoryRevenue"), analytics.categoryRows, {

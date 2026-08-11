@@ -4,14 +4,17 @@
   var STORAGE_KEY = "vibecraft_theme";
   var header = document.querySelector(".site-header");
 
-  if (header) {
-    header.insertAdjacentHTML(
-      "beforeend",
+  if (header && !header.querySelector(".admin-account")) {
+    var themeHost = header.querySelector(".account-menu-wrap");
+    var themeIcons =
+      '<svg class="theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>' +
+      '<svg class="theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+    var themeMarkup =
       '<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode" aria-pressed="false">' +
-        '<svg class="theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>' +
-        '<svg class="theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>' +
-        "</button>"
-    );
+        themeIcons +
+      "</button>";
+    if (themeHost) themeHost.insertAdjacentHTML("beforebegin", themeMarkup);
+    else header.insertAdjacentHTML("beforeend", themeMarkup);
 
     var themeToggle = document.getElementById("themeToggle");
 
@@ -64,6 +67,43 @@
     siteNav.querySelectorAll("a").forEach(function (link) { link.addEventListener("click", function () { setMenuState(false); }); });
     document.addEventListener("keydown", function (event) { if (event.key === "Escape") setMenuState(false); });
   }
+})();
+
+(function () {
+  "use strict";
+
+  // The home page's showcase.js owns live filtering. Other pages still get
+  // the same navbar search affordance and send the query to the collection.
+  var searchToggle = document.getElementById("navSearchToggle");
+  var searchPanel = document.getElementById("productSearchPanel");
+  var searchForm = document.getElementById("productSearchForm");
+  var searchInput = document.getElementById("productSearchInput");
+
+  if (!searchToggle || !searchPanel || !searchForm || !searchInput || document.getElementById("shopCategories") || /(?:^|\/)index\.html$/i.test(window.location.pathname) || window.location.pathname === "/") return;
+
+  function setSearchOpen(isOpen) {
+    searchPanel.hidden = !isOpen;
+    searchToggle.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) window.setTimeout(function () { searchInput.focus(); }, 0);
+  }
+
+  searchToggle.addEventListener("click", function () {
+    setSearchOpen(searchPanel.hidden);
+  });
+
+  searchForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var query = searchInput.value.trim();
+    window.location.href = "index.html" + (query ? "?search=" + encodeURIComponent(query) : "#collection");
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!searchPanel.hidden && !searchPanel.contains(event.target) && !searchToggle.contains(event.target)) setSearchOpen(false);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") setSearchOpen(false);
+  });
 })();
 
 (function () {
@@ -126,9 +166,10 @@
   }
 
   async function syncAuthLink() {
-    var link = document.querySelector("[data-auth-link]");
+    var authLinks = Array.prototype.slice.call(document.querySelectorAll("[data-auth-link]"));
+    var link = document.querySelector(".desktop-auth-link") || authLinks[0];
 
-    if (!link || !window.VibecraftApi) return;
+    if (!authLinks.length || !window.VibecraftApi) return;
 
     try {
       var payload = await window.VibecraftApi.get("auth/me");
@@ -136,20 +177,22 @@
       if (payload && payload.data) {
         var user = payload.data;
 
-        link.href = "account.html";
-        link.textContent = "";
-        if (user.profileImageUrl) {
-          var profileImage = document.createElement("img");
-          profileImage.src = user.profileImageUrl;
-          profileImage.alt = "";
-          profileImage.loading = "lazy";
-          link.appendChild(profileImage);
-        } else {
-          link.textContent = getInitials(user);
-        }
+        authLinks.forEach(function (authLink) {
+          authLink.href = "account.html";
+          authLink.textContent = "";
+          if (user.profileImageUrl) {
+            var profileImage = document.createElement("img");
+            profileImage.src = user.profileImageUrl;
+            profileImage.alt = "";
+            profileImage.loading = "lazy";
+            authLink.appendChild(profileImage);
+          } else {
+            authLink.textContent = authLink.classList.contains("mobile-login-link") ? "My account" : getInitials(user);
+          }
+          authLink.setAttribute("aria-label", "Open account for " + (user.name || user.email));
+          authLink.title = user.name || user.email || "Account";
+        });
         link.classList.add("account-avatar-link");
-        link.setAttribute("aria-label", "Open account menu for " + (user.name || user.email));
-        link.title = user.name || user.email || "Account";
         wireCustomerAccountMenu(link, user);
         return;
       }
@@ -161,10 +204,12 @@
       var adminPayload = await window.VibecraftApi.get("admin/auth/me");
 
       if (adminPayload && adminPayload.data) {
-        link.href = "admin-dashboard.html";
-        link.textContent = "Admin";
-        link.setAttribute("aria-label", "Back to admin dashboard");
-        link.title = "Back to admin dashboard";
+        authLinks.forEach(function (authLink) {
+          authLink.href = "admin-dashboard.html";
+          authLink.textContent = "Admin";
+          authLink.setAttribute("aria-label", "Back to admin dashboard");
+          authLink.title = "Back to admin dashboard";
+        });
       }
     } catch (_error) {
       // Not signed in at all - leave the default "Log in" link as-is.

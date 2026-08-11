@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=ai-mobile-menu-2" />
   </head>
   <body>
     <header class="site-header">
@@ -22,7 +22,23 @@
         <a href="index.html#about">About</a>
         <a href="index.html#contact">Contact</a>
         <a class="mobile-cart-link" href="cart.html"><span class="cart-link-label"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>Cart</span><span class="cart-count" hidden>0</span></a>
+        <a class="mobile-login-link" href="login.html" data-auth-link>Log in</a>
       </nav>
+      <div class="nav-search-wrap">
+        <button class="nav-search-toggle" id="navSearchToggle" type="button" aria-label="Search products" aria-expanded="false" aria-controls="productSearchPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        </button>
+        <div class="nav-search-popover" id="productSearchPanel" hidden>
+          <form class="nav-search-form" id="productSearchForm" role="search">
+            <label class="sr-only" for="productSearchInput">Search products</label>
+            <input id="productSearchInput" type="search" placeholder="Search products" autocomplete="off" />
+            <button class="nav-search-submit" type="submit" aria-label="Search products">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+            </button>
+          </form>
+          <p class="nav-search-status" id="productSearchStatus" aria-live="polite">Search the collection by name or type.</p>
+        </div>
+      </div>
       <div class="cart-hover-wrap">
         <button class="cart-toggle" id="cartToggle" type="button" aria-label="Open cart" aria-expanded="false" aria-controls="cartDrawer"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg><span class="cart-count" hidden>0</span></button>
         <div class="cart-preview">
@@ -31,7 +47,7 @@
         </div>
       </div>
       <div class="account-menu-wrap">
-        <a class="login-link" href="login.html" data-auth-link>Log in</a>
+        <a class="login-link desktop-auth-link" href="login.html" data-auth-link>Log in</a>
         <div class="customer-account-menu" id="customerAccountMenu" hidden role="menu">
           <div class="admin-account-info">
             <strong id="customerAccountName">Account</strong>
@@ -39,6 +55,7 @@
           </div>
           <a class="admin-account-item" href="account.html" role="menuitem">My account</a>
           <a class="admin-account-item" href="account.html#orders" role="menuitem">Order history</a>
+          <a class="admin-account-item" href="account.html#wishlist" role="menuitem">Wishlist</a>
           <div class="admin-account-divider"></div>
           <button class="admin-account-item is-danger" id="customerAccountSignOut" type="button" role="menuitem">Sign out</button>
         </div>
@@ -61,11 +78,14 @@
 
     <main>
       <div class="ai-page section-shell">
+        <div class="ai-sheet-head">
+          <button class="ai-sheet-icon" id="aiNewQuestion" type="button" aria-label="Start a new question">+</button>
+          <strong><span class="ai-sheet-orb ai-orb ai-orb-avatar" aria-hidden="true"></span>Ask me <span aria-hidden="true">+</span></strong>
+          <a class="ai-sheet-icon" href="index.html" aria-label="Close assistant">x</a>
+        </div>
         <div class="ai-intro">
-          <span class="ai-orb ai-orb-lg" aria-hidden="true"></span>
-          <p class="eyebrow">AI shopping assistant</p>
-          <h1>Find your <em>setup.</em></h1>
-          <p class="ai-sub">Ask about prices, specs, or what holds up in a bright room — answers come straight from our real catalog and stock.</p>
+          <h1>Any questions about <em>this one?</em></h1>
+          <p class="ai-sub">Let us find what you need. I am powered by AI and I might make mistakes.</p>
         </div>
 
         <div class="ai-chat">
@@ -75,19 +95,32 @@
             <button type="button" class="ai-chip">What's your cheapest projector?</button>
             <button type="button" class="ai-chip">What works best in a bright room?</button>
             <button type="button" class="ai-chip">What's good for movie nights outdoors?</button>
+            <button type="button" class="ai-chip">Compare two projectors for me</button>
           </div>
+
+          <section class="ai-compare-tools" id="aiCompareTools" aria-labelledby="aiCompareHeading">
+            <div class="ai-compare-heading"><span class="ai-orb ai-orb-avatar" aria-hidden="true"></span><div><p class="eyebrow">Compare products</p><strong id="aiCompareHeading">Which one is better?</strong></div></div>
+            <div class="ai-compare-fields">
+              <label>First product<select id="aiCompareFirst" aria-label="First product to compare"><option value="">Loading products...</option></select></label>
+              <span class="ai-compare-vs" aria-hidden="true">vs</span>
+              <label>Second product<select id="aiCompareSecond" aria-label="Second product to compare"><option value="">Loading products...</option></select></label>
+              <button class="button button-dark" id="aiCompareButton" type="button" disabled>Compare <span>&#8594;</span></button>
+            </div>
+          </section>
+
+          <div class="ai-comparison-result" id="aiComparisonResult" hidden aria-live="polite"></div>
 
           <form class="ai-input-row" id="aiForm">
             <input id="aiInput" type="text" placeholder="Ask about price, specs, or your room…" autocomplete="off" maxlength="800" required />
-            <button class="button button-dark" type="submit">Send</button>
+            <button class="button button-dark" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></button>
           </form>
         </div>
       </div>
     </main>
 
-    <script src="api.js"></script>
+    <script src="api.js?v=auth-order-1"></script>
     <script src="cart-store.js"></script>
-    <script src="app.js"></script>
-    <script src="find-your-setup.js"></script>
+    <script src="app.js?v=ai-mobile-menu-2"></script>
+    <script src="find-your-setup.js?v=assistant-mobile-compare-3"></script>
   </body>
 </html>

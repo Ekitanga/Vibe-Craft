@@ -23,26 +23,6 @@
     el.classList.toggle("is-error", Boolean(isError));
   }
 
-  function renderProfilePhoto(account) {
-    var photo = document.getElementById("profilePhoto");
-    var fallback = document.getElementById("profilePhotoFallback");
-
-    if (!photo || !fallback) return;
-
-    fallback.textContent = String(account.name || account.email || "U").trim().slice(0, 1).toUpperCase();
-
-    if (account.profileImageUrl) {
-      photo.src = account.profileImageUrl;
-      photo.hidden = false;
-      fallback.hidden = true;
-      return;
-    }
-
-    photo.removeAttribute("src");
-    photo.hidden = true;
-    fallback.hidden = false;
-  }
-
   function renderPasswordSection(account) {
     var heading = document.getElementById("passwordHeading");
     var currentField = document.getElementById("currentPasswordField");
@@ -62,75 +42,6 @@
     }
   }
 
-  async function handleGoogleLinkCredential(response) {
-    var msgEl = document.getElementById("googleConnectionStatusMsg");
-
-    try {
-      var payload = await window.VibecraftApi.post("auth/google/link", { idToken: response.credential });
-      currentAccount = payload.data;
-      renderGoogleConnection(currentAccount);
-      renderPasswordSection(currentAccount);
-      setStatus(msgEl, "Google account connected.");
-    } catch (error) {
-      setStatus(msgEl, error.message || "Could not connect Google.", true);
-    }
-  }
-
-  function renderGoogleConnection(account) {
-    var statusEl = document.getElementById("googleConnectionStatus");
-    var actionMount = document.getElementById("googleConnectionAction");
-    var msgEl = document.getElementById("googleConnectionStatusMsg");
-
-    actionMount.innerHTML = "";
-    setStatus(msgEl, "");
-
-    if (account.hasGoogleLinked) {
-      statusEl.textContent = "Connected";
-
-      var disconnectBtn = document.createElement("button");
-      disconnectBtn.type = "button";
-      disconnectBtn.className = "button button-outline";
-      disconnectBtn.textContent = "Disconnect";
-      disconnectBtn.addEventListener("click", async function () {
-        if (!window.confirm("Disconnect your Google account? You'll still be able to sign in with your password.")) return;
-
-        disconnectBtn.disabled = true;
-
-        try {
-          var payload = await window.VibecraftApi.post("auth/google/unlink");
-          currentAccount = payload.data;
-          renderGoogleConnection(currentAccount);
-          renderPasswordSection(currentAccount);
-          setStatus(msgEl, "Google account disconnected.");
-        } catch (error) {
-          setStatus(msgEl, error.message || "Could not disconnect Google.", true);
-          disconnectBtn.disabled = false;
-        }
-      });
-      actionMount.appendChild(disconnectBtn);
-      return;
-    }
-
-    statusEl.textContent = "Not connected";
-
-    var mountDiv = document.createElement("div");
-    actionMount.appendChild(mountDiv);
-
-    if (window.google && window.google.accounts && window.google.accounts.id && window.GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.initialize({
-        client_id: window.GOOGLE_CLIENT_ID,
-        callback: handleGoogleLinkCredential,
-      });
-      window.google.accounts.id.renderButton(mountDiv, {
-        type: "standard",
-        theme: "outline",
-        size: "medium",
-        shape: "pill",
-        text: "signin_with",
-      });
-    }
-  }
-
   function renderOrders(orders) {
     var listEl = document.getElementById("ordersList");
     var countEl = document.getElementById("orderCount");
@@ -142,27 +53,39 @@
       return;
     }
 
-    listEl.innerHTML = orders
-      .map(function (order) {
-        var itemsHtml = order.items
-          .map(function (item) {
-            return "<li>" + item.quantity + "× " + escapeHtml(item.name) + "</li>";
-          })
-          .join("");
-        var date = order.createdAt ? dateFormatter.format(new Date(order.createdAt)) : "—";
+    listEl.innerHTML = orders.map(function (order) {
+      var itemsHtml = order.items.map(function (item) {
+        return "<li>" + item.quantity + "× " + escapeHtml(item.name) + "</li>";
+      }).join("");
+      var date = order.createdAt ? dateFormatter.format(new Date(order.createdAt)) : "—";
 
-        return [
-          '<div class="order-card">',
-          '<div class="order-card-head">',
-          '<span><strong>' + escapeHtml(order.orderNumber || "Order") + '</strong><br><span class="status-pill status-' + escapeHtml(order.status) + '">' + escapeHtml(order.status) + "</span></span>",
-          '<span class="order-card-date">' + date + "</span>",
-          "</div>",
-          '<ul class="order-card-items">' + itemsHtml + "</ul>",
-          '<div class="order-card-total"><span>Total</span><strong>' + priceFormatter.format(order.total) + "</strong></div>",
-          "</div>",
-        ].join("");
-      })
-      .join("");
+      return [
+        '<div class="order-card">',
+        '<div class="order-card-head"><span><strong>' + escapeHtml(order.orderNumber || "Order") + '</strong><br><span class="status-pill status-' + escapeHtml(order.status) + '">' + escapeHtml(order.status) + "</span></span>",
+        '<span class="order-card-date">' + date + "</span></div>",
+        '<ul class="order-card-items">' + itemsHtml + "</ul>",
+        '<div class="order-card-total"><span>Total</span><strong>' + priceFormatter.format(order.total) + "</strong></div>",
+        "</div>",
+      ].join("");
+    }).join("");
+  }
+
+  function renderWishlist() {
+    var listEl = document.getElementById("wishlistList");
+    var countEl = document.getElementById("wishlistCount");
+    var items = window.VibecraftWishlist.getItems();
+
+    countEl.textContent = items.length + (items.length === 1 ? " saved" : " saved");
+
+    if (!items.length) {
+      listEl.innerHTML = '<p class="cart-empty">No saved products yet. <a href="index.html#collection">Browse the collection</a>.</p>';
+      return;
+    }
+
+    listEl.innerHTML = items.map(function (product) {
+      var image = product.images && product.images[0] ? product.images[0] : "assets/outdoor-cinema.jpg";
+      return '<article class="wishlist-item"><img src="' + escapeHtml(image) + '" alt="" loading="lazy"><div class="wishlist-item-copy"><a href="product.html?id=' + encodeURIComponent(product.id) + '"><strong>' + escapeHtml(product.name) + '</strong></a><span>' + priceFormatter.format(Number(product.price || 0)) + '</span></div><button class="wishlist-remove" type="button" data-remove-wishlist="' + escapeHtml(product.id) + '" aria-label="Remove ' + escapeHtml(product.name) + ' from wishlist">×</button></article>';
+    }).join("");
   }
 
   async function loadOrders() {
@@ -178,17 +101,9 @@
 
   function applyAccount(account) {
     currentAccount = account;
-
     document.getElementById("accountGreeting").textContent = "Hey, " + (account.name || "there") + ".";
-    document.getElementById("accountIntro").textContent = "Manage your details, password, and orders.";
-    document.getElementById("profileName").value = account.name || "";
-    document.getElementById("profileEmail").value = account.email || "";
-    document.getElementById("profilePhone").value = account.phone || "";
-    renderProfilePhoto(account);
-
+    document.getElementById("accountIntro").textContent = "Your orders, saved products, and password settings.";
     renderPasswordSection(account);
-    renderGoogleConnection(account);
-
     document.getElementById("accountContent").hidden = false;
     document.getElementById("accountBottomActions").hidden = false;
   }
@@ -205,7 +120,6 @@
     }
 
     var account = payload && payload.data;
-
     if (!account) {
       redirectToLogin();
       return;
@@ -213,52 +127,17 @@
 
     applyAccount(account);
     status.textContent = "";
+    renderWishlist();
     loadOrders();
 
-    document.getElementById("profilePhotoInput").addEventListener("change", async function (event) {
-      var file = event.target.files && event.target.files[0];
-      var statusEl = document.getElementById("profilePhotoStatus");
-      if (!file) return;
-
-      var formData = new FormData();
-      formData.append("image", file);
-      setStatus(statusEl, "Uploading…");
-
-      try {
-        var payload = await window.VibecraftApi.upload("auth/me/avatar", formData);
-        applyAccount(payload.data);
-        setStatus(statusEl, "Profile photo saved.");
-      } catch (error) {
-        setStatus(statusEl, error.message || "Could not upload your profile photo.", true);
-      } finally {
-        event.target.value = "";
-      }
+    document.getElementById("wishlistList").addEventListener("click", function (event) {
+      var removeButton = event.target.closest("[data-remove-wishlist]");
+      if (!removeButton) return;
+      window.VibecraftWishlist.remove(removeButton.getAttribute("data-remove-wishlist"));
+      renderWishlist();
     });
 
-    document.getElementById("profileForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-
-      var form = event.target;
-      var submitButton = form.querySelector("button[type=submit]");
-      var profileStatus = document.getElementById("profileStatus");
-
-      setStatus(profileStatus, "Saving…");
-      submitButton.disabled = true;
-
-      try {
-        var payload = await window.VibecraftApi.patch("auth/me", {
-          name: document.getElementById("profileName").value.trim(),
-          phone: document.getElementById("profilePhone").value.trim(),
-        });
-        currentAccount = payload.data;
-        document.getElementById("accountGreeting").textContent = "Hey, " + (currentAccount.name || "there") + ".";
-        setStatus(profileStatus, "Saved.");
-      } catch (error) {
-        setStatus(profileStatus, error.message || "Could not save your profile.", true);
-      } finally {
-        submitButton.disabled = false;
-      }
-    });
+    document.addEventListener("wishlist:change", renderWishlist);
 
     document.getElementById("passwordForm").addEventListener("submit", async function (event) {
       event.preventDefault();

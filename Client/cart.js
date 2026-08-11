@@ -13,9 +13,11 @@
   var itemsList = document.getElementById("cartItemsList");
   var checkoutSubtotal = document.getElementById("checkoutSubtotal");
   var form = document.getElementById("checkoutForm");
+  var checkoutAuthGate = document.getElementById("checkoutAuthGate");
   var checkoutStatus = document.getElementById("checkoutStatus");
   var checkoutReceipt = document.getElementById("checkoutReceipt");
   var products = [];
+  var customerAccount = null;
   var LAST_ORDER_KEY = "vibecraft_last_order";
   var receiptDateFormatter = new Intl.DateTimeFormat("en-KE", {
     dateStyle: "medium",
@@ -160,11 +162,13 @@
     if (!cartItems.length) {
       itemsList.innerHTML = '<p class="cart-empty-state">Your cart is empty. <a href="index.html#collection">Browse the range</a>.</p>';
       form.hidden = true;
+      if (checkoutAuthGate) checkoutAuthGate.hidden = true;
       updateSubtotal(0);
       return;
     }
 
-    form.hidden = false;
+    form.hidden = !customerAccount;
+    if (checkoutAuthGate) checkoutAuthGate.hidden = Boolean(customerAccount);
 
     itemsList.innerHTML = cartItems
       .map(function (item) {
@@ -207,6 +211,10 @@
 
     var cartItems = window.VibecraftCart.getItems();
     if (!cartItems.length) return;
+
+    var customer = await window.VibecraftApi.requireCustomer();
+    if (!customer) return;
+    customerAccount = customer;
 
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -301,11 +309,14 @@
     setDeliveryDateMin();
 
     try {
+      customerAccount = await window.VibecraftApi.getCurrentCustomer();
       var payload = await window.VibecraftApi.get("products");
       products = (payload && payload.data) || [];
       render();
-      restoreLastReceipt();
-      prefillFromAccount();
+      if (customerAccount) {
+        restoreLastReceipt();
+        prefillFromAccount();
+      }
     } catch (_error) {
       itemsList.innerHTML = '<p class="cart-empty-state">Could not load your cart.</p>';
     }

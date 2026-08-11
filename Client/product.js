@@ -18,6 +18,17 @@
     }).format(Number(amount || 0));
   }
 
+  function priceMarkup(product) {
+    var price = Number(product.price || 0);
+    var compareAtPrice = Number(product.compareAtPrice || 0);
+    var isDiscounted = compareAtPrice > price;
+
+    if (!isDiscounted) return '<span class="price-current">' + formatPrice(price, product.currency) + "</span>";
+
+    var discountPercent = Math.round((1 - price / compareAtPrice) * 100);
+    return '<span class="price-stack"><span class="price-current">' + formatPrice(price, product.currency) + '</span><del class="price-compare">' + formatPrice(compareAtPrice, product.currency) + '</del><span class="price-discount">-' + discountPercent + '%</span></span>';
+  }
+
   function humanizeKey(key) {
     return key
       .replace(/([A-Z])/g, " $1")
@@ -118,24 +129,16 @@
 
   function relatedCardMarkup(product) {
     var image = product.images && product.images[0];
-    var stock = Number(product.stock || 0);
-    var lowStock = stock > 0 && stock <= 3;
-    var outOfStock = stock <= 0;
-    var stockLabel = outOfStock ? "Out of stock" : lowStock ? stock + " left" : "In stock";
 
     return [
-      '<a class="product-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
+      '<a class="product-card showcase-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
       '<div class="product-card-media">',
       image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' : "",
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",
       "</div>",
       '<div class="product-card-body">',
       "<h3>" + escapeHtml(product.name) + "</h3>",
-      '<p class="product-card-summary">' + escapeHtml(product.shortSummary || product.description || "") + "</p>",
-      '<div class="product-card-footer">',
-      '<span class="product-card-price">' + formatPrice(product.price, product.currency) + "</span>",
-      '<span class="product-card-stock' + (lowStock ? " is-low" : "") + '">' + stockLabel + "</span>",
-      "</div>",
+      '<div class="showcase-card-meta">' + priceMarkup(product) + "</div>",
       "</div>",
       "</a>",
     ].join("");
@@ -284,6 +287,27 @@
     return existing ? existing.quantity : 0;
   }
 
+  function enableHoverZoom(frame, image) {
+    if (!frame || !image || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+    function setZoomOrigin(event) {
+      var rect = frame.getBoundingClientRect();
+      var x = ((event.clientX - rect.left) / rect.width) * 100;
+      var y = ((event.clientY - rect.top) / rect.height) * 100;
+      image.style.transformOrigin = Math.max(0, Math.min(100, x)) + "% " + Math.max(0, Math.min(100, y)) + "%";
+    }
+
+    frame.addEventListener("mouseenter", function (event) {
+      setZoomOrigin(event);
+      frame.classList.add("is-hover-zoomed");
+    });
+    frame.addEventListener("mousemove", setZoomOrigin);
+    frame.addEventListener("mouseleave", function () {
+      frame.classList.remove("is-hover-zoomed");
+      image.style.transformOrigin = "center center";
+    });
+  }
+
   async function loadCategoryName(categoryId) {
     try {
       var payload = await window.VibecraftApi.get("categories");
@@ -314,13 +338,41 @@
 
       var image = product.images && product.images[0];
       var imageEl = document.getElementById("productDetailImage");
+      enableHoverZoom(document.querySelector(".product-detail-image-frame"), imageEl);
+      var lightbox = document.getElementById("productLightbox");
+      var lightboxImage = document.getElementById("productLightboxImage");
       imageEl.src = image || "";
       imageEl.alt = product.name;
+      var zoomButton = document.getElementById("productImageZoom");
+      if (zoomButton) {
+        zoomButton.addEventListener("click", function () {
+          lightboxImage.src = imageEl.src;
+          lightboxImage.alt = imageEl.alt;
+          lightbox.showModal();
+        });
+      }
+      document.getElementById("productLightboxClose").addEventListener("click", function () { lightbox.close(); });
+      lightbox.addEventListener("click", function (event) {
+        if (event.target === lightbox) lightbox.close();
+      });
       renderThumbnails(product.images, imageEl, document.getElementById("productDetailThumbs"));
 
       document.getElementById("productDetailName").textContent = product.name;
-      document.getElementById("productDetailPrice").textContent = formatPrice(product.price, product.currency);
+      document.getElementById("productDetailPrice").innerHTML = priceMarkup(product);
       document.getElementById("productDetailSummary").textContent = product.shortSummary || "";
+
+      var visualFacts = document.getElementById("productVisualFacts");
+      var productSpecs = product.specs || {};
+      var factEntries = [
+        ["Resolution", product.resolution || productSpecs.resolution],
+        ["Brightness", product.brightness || productSpecs.brightness],
+        ["Size", productSpecs.projectionSize],
+      ].filter(function (entry) { return entry[1]; }).slice(0, 3);
+      if (visualFacts) {
+        visualFacts.innerHTML = factEntries.map(function (entry) {
+          return '<div class="product-visual-fact"><span>' + escapeHtml(entry[0]) + '</span><strong>' + escapeHtml(entry[1]) + '</strong></div>';
+        }).join("");
+      }
       document.getElementById("productDetailDescription").textContent = product.description || "";
 
       var stock = Number(product.stock || 0);
@@ -397,7 +449,16 @@
         }
       });
 
-      addButton.addEventListener("click", function () {
+      addButton.addEventListener("click", async function () {
+        if (!window.VibecraftApi) return;
+
+        addButton.disabled = true;
+        var customer = await window.VibecraftApi.requireCustomer();
+        if (!customer) {
+          addButton.disabled = false;
+          return;
+        }
+
         window.VibecraftCart.addItem(product.id, qty);
         syncAddToCartUI();
         addStatus.textContent = "Added to cart.";

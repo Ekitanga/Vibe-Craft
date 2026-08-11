@@ -54,7 +54,27 @@
 
   function safeNext(fallback) {
     var next = new URLSearchParams(window.location.search).get("next") || "";
-    return /^[a-zA-Z0-9_-]+\.html$/.test(next) ? next : fallback;
+    return /^[a-zA-Z0-9_-]+\.html(?:[?#][^<>]*)?$/.test(next) ? next : fallback;
+  }
+
+  async function getCurrentCustomer() {
+    try {
+      var payload = await request("auth/me", { method: "GET" });
+      return payload && payload.data ? payload.data : null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async function requireCustomer() {
+    var customer = await getCurrentCustomer();
+    if (customer) return customer;
+
+    var fileName = window.location.pathname.split("/").pop() || "index.html";
+    if (!/^[a-zA-Z0-9_-]+\.html$/.test(fileName)) fileName = "index.html";
+    var next = fileName + window.location.search + window.location.hash;
+    window.location.href = "login.html?next=" + encodeURIComponent(next);
+    return null;
   }
 
   window.VibecraftApi = {
@@ -70,6 +90,8 @@
     del: function (path) {
       return request(path, { method: "DELETE" });
     },
+    getCurrentCustomer: getCurrentCustomer,
+    requireCustomer: requireCustomer,
     upload: upload,
     safeNext: safeNext,
   };

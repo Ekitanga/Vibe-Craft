@@ -47,6 +47,14 @@
     return { label: "In stock", className: "is-ok" };
   }
 
+  function heroPriceMarkup(product) {
+    var price = Number(product.price || 0);
+    var compareAtPrice = Number(product.compareAtPrice || 0);
+    if (compareAtPrice <= price) return '<span class="hero-slide-meta-price price-current">' + priceFormatter.format(price) + "</span>";
+    var discountPercent = Math.round((1 - price / compareAtPrice) * 100);
+    return '<span class="hero-slide-meta-price price-current">' + priceFormatter.format(price) + '</span><del class="hero-slide-meta-price-compare">' + priceFormatter.format(compareAtPrice) + '</del><span class="hero-slide-meta-discount">-' + discountPercent + '%</span>';
+  }
+
   function slideMarkup(product, index, categoryName) {
     var image = (product.images && product.images[0]) || "assets/outdoor-cinema.jpg";
     var description = product.shortSummary || product.description || "";
@@ -56,7 +64,6 @@
       '<div class="hero-slide' + (index === 0 ? " is-active" : "") + '" data-index="' + index + '" aria-hidden="' + (index === 0 ? "false" : "true") + '">',
       '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index === 0 ? "eager" : "lazy") + '" />',
       '<div class="hero-slide-scrim"></div>',
-      '<div class="hero-slide-fade"></div>',
       '<div class="hero-slide-info">',
       '<div class="hero-slide-badges">',
       categoryName ? '<span class="hero-slide-badge hero-slide-badge-outline">' + escapeHtml(categoryName) + "</span>" : "",
@@ -64,7 +71,7 @@
       "</div>",
       '<h2 class="hero-slide-title">' + escapeHtml(product.name) + "</h2>",
       '<div class="hero-slide-meta">',
-      '<span class="hero-slide-meta-price">' + priceFormatter.format(Number(product.price || 0)) + "</span>",
+      heroPriceMarkup(product),
       '<span class="hero-slide-meta-dot" aria-hidden="true">•</span>',
       '<span class="hero-slide-meta-stock ' + stock.className + '">' + stock.label + "</span>",
       product.brand ? '<span class="hero-slide-meta-dot" aria-hidden="true">•</span><span class="hero-slide-meta-brand">' + escapeHtml(product.brand) + "</span>" : "",
@@ -261,11 +268,19 @@
       }
     });
 
-    slidesEl.addEventListener("click", function (event) {
+    slidesEl.addEventListener("click", async function (event) {
       var btn = event.target.closest(".hero-slide-quickadd");
-      if (!btn || btn.disabled || !window.VibecraftCart) return;
+      if (!btn || btn.disabled || !window.VibecraftCart || !window.VibecraftApi) return;
+
+      btn.disabled = true;
+      var customer = await window.VibecraftApi.requireCustomer();
+      if (!customer) {
+        btn.disabled = false;
+        return;
+      }
 
       window.VibecraftCart.addItem(btn.getAttribute("data-product-id"), 1);
+      btn.disabled = false;
 
       btn.classList.add("is-added");
       btn.innerHTML = CHECK_ICON;
@@ -280,7 +295,9 @@
   async function boot() {
     try {
       var responses = await Promise.all([window.VibecraftApi.get("products"), window.VibecraftApi.get("categories")]);
-      var products = ((responses[0] && responses[0].data) || []).slice(0, MAX_SLIDES);
+      var products = ((responses[0] && responses[0].data) || [])
+        .filter(function (product) { return /(^|-)?projectors$/.test(String(product.categoryId || "").toLowerCase()); })
+        .slice(0, MAX_SLIDES);
       var categories = (responses[1] && responses[1].data) || [];
       var categoryNameById = {};
       categories.forEach(function (category) {
