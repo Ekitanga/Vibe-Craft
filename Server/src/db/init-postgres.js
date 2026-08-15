@@ -272,6 +272,7 @@ const initializePostgres = async () => {
     ADD COLUMN IF NOT EXISTS delivery_landmark TEXT,
     ADD COLUMN IF NOT EXISTS preferred_delivery_date DATE,
     ADD COLUMN IF NOT EXISTS preferred_delivery_time TEXT,
+    ADD COLUMN IF NOT EXISTS delivery_fee INTEGER NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS mpesa_code TEXT,
     ADD COLUMN IF NOT EXISTS payment_verified BOOLEAN NOT NULL DEFAULT FALSE`);
 

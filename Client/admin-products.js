@@ -15,6 +15,15 @@
   var imageFilesInput = document.getElementById("productImageFiles");
   var imageUploadStatus = document.getElementById("productImageUploadStatus");
   var imagePreview = document.getElementById("productImagePreview");
+  var desktopCardImageInput = document.getElementById("productDesktopCardImage");
+  var mobileCardImageInput = document.getElementById("productMobileCardImage");
+  var desktopCardImageFileInput = document.getElementById("productDesktopCardImageFile");
+  var mobileCardImageFileInput = document.getElementById("productMobileCardImageFile");
+  var desktopCardImageStatus = document.getElementById("productDesktopCardImageStatus");
+  var mobileCardImageStatus = document.getElementById("productMobileCardImageStatus");
+  var productVideosInput = document.getElementById("productVideos");
+  var productVideoFileInput = document.getElementById("productVideoFile");
+  var productVideoUploadStatus = document.getElementById("productVideoUploadStatus");
 
   function setFormStatus(message, isError) {
     formStatus.textContent = message || "";
@@ -40,8 +49,11 @@
     imagePreview.innerHTML = urls
       .map(function (url, index) {
         return (
-          '<div class="image-preview-thumb">' +
+          '<div class="image-preview-thumb' + (index === 0 ? ' is-main' : '') + '">' +
           '<img src="' + window.VibecraftAdmin.escapeHtml(url) + '" alt="" loading="lazy" />' +
+          (index === 0
+            ? '<span class="image-preview-main-badge">Main image</span>'
+            : '<button type="button" class="image-preview-main" data-main-index="' + index + '">Use as main</button>') +
           '<button type="button" class="image-preview-remove" data-remove-index="' + index + '" aria-label="Remove this image">✕</button>' +
           "</div>"
         );
@@ -50,6 +62,18 @@
   }
 
   imagePreview.addEventListener("click", function (event) {
+    var mainIndexAttr = event.target.getAttribute("data-main-index");
+    if (mainIndexAttr !== null) {
+      var mainIndex = Number(mainIndexAttr);
+      var urls = parseLines(imagesTextarea.value);
+      if (mainIndex > 0 && mainIndex < urls.length) {
+        urls.unshift(urls.splice(mainIndex, 1)[0]);
+        imagesTextarea.value = joinLines(urls);
+        renderImagePreview();
+      }
+      return;
+    }
+
     var indexAttr = event.target.getAttribute("data-remove-index");
     if (indexAttr === null) return;
 
@@ -86,6 +110,66 @@
       imageUploadStatus.classList.add("is-error");
     } finally {
       imageFilesInput.value = "";
+    }
+  });
+
+  function wireCardImageUpload(fileInput, urlInput, statusEl, label) {
+    fileInput.addEventListener("change", async function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      var formData = new FormData();
+      formData.append("images", file);
+      statusEl.textContent = "Uploading...";
+      statusEl.classList.remove("is-error");
+
+      try {
+        var payload = await window.VibecraftApi.upload("admin/uploads", formData);
+        var url = payload && payload.data && payload.data.urls && payload.data.urls[0];
+        if (!url) throw new Error("No image URL was returned.");
+        urlInput.value = url;
+        statusEl.textContent = label + " uploaded.";
+      } catch (error) {
+        statusEl.textContent = error.message || "Could not upload this image.";
+        statusEl.classList.add("is-error");
+      } finally {
+        fileInput.value = "";
+      }
+    });
+  }
+
+  wireCardImageUpload(desktopCardImageFileInput, desktopCardImageInput, desktopCardImageStatus, "Desktop image");
+  wireCardImageUpload(mobileCardImageFileInput, mobileCardImageInput, mobileCardImageStatus, "Mobile image");
+
+  productVideoFileInput.addEventListener("change", async function () {
+    var file = productVideoFileInput.files && productVideoFileInput.files[0];
+    if (!file) return;
+
+    var formData = new FormData();
+    formData.append("video", file);
+    productVideoUploadStatus.textContent = "Uploading...";
+    productVideoUploadStatus.classList.remove("is-error");
+
+    try {
+      var payload;
+      try {
+        payload = await window.VibecraftApi.upload("admin/uploads/product-video", formData);
+      } catch (error) {
+        if (error.status !== 404) throw error;
+        // Older deployments already expose the testimonial video endpoint with
+        // the same response shape, so keep uploads working during rollout.
+        payload = await window.VibecraftApi.upload("admin/uploads/video", formData);
+      }
+      var url = payload && payload.data && payload.data.videoUrl;
+      if (!url) throw new Error("No video URL was returned.");
+      var existingVideos = parseLines(productVideosInput.value);
+      productVideosInput.value = joinLines(existingVideos.concat(url));
+      productVideoUploadStatus.textContent = "Video uploaded.";
+    } catch (error) {
+      productVideoUploadStatus.textContent = error.message || "Could not upload this video.";
+      productVideoUploadStatus.classList.add("is-error");
+    } finally {
+      productVideoFileInput.value = "";
     }
   });
 
@@ -164,6 +248,15 @@
     setFormStatus("");
     imageUploadStatus.textContent = "";
     imageUploadStatus.classList.remove("is-error");
+    desktopCardImageInput.value = "";
+    mobileCardImageInput.value = "";
+    productVideosInput.value = "";
+    desktopCardImageStatus.textContent = "";
+    mobileCardImageStatus.textContent = "";
+    desktopCardImageStatus.classList.remove("is-error");
+    mobileCardImageStatus.classList.remove("is-error");
+    productVideoUploadStatus.textContent = "";
+    productVideoUploadStatus.classList.remove("is-error");
     renderImagePreview();
   }
 
@@ -183,6 +276,9 @@
     document.getElementById("productSummary").value = product.shortSummary || "";
     document.getElementById("productDescription").value = product.description || "";
     imagesTextarea.value = joinLines(product.images);
+    desktopCardImageInput.value = (product.specs && product.specs.cardDesktopImage) || "";
+    mobileCardImageInput.value = (product.specs && product.specs.cardMobileImage) || "";
+    productVideosInput.value = joinLines(product.specs && product.specs.videos);
     document.getElementById("productBoxItems").value = joinLines(product.whatsInBox);
     document.getElementById("productUseCases").value = joinLines(product.idealUseCases);
     document.getElementById("productFeatured").checked = Boolean(product.featured);
@@ -222,6 +318,11 @@
       whatsInBox: parseLines(document.getElementById("productBoxItems").value),
       idealUseCases: parseLines(document.getElementById("productUseCases").value),
       featured: document.getElementById("productFeatured").checked,
+      specs: Object.assign({}, (state.products.find(function (item) { return item.id === state.editingId; }) || {}).specs || {}, {
+        cardDesktopImage: desktopCardImageInput.value.trim() || null,
+        cardMobileImage: mobileCardImageInput.value.trim() || null,
+        videos: parseLines(productVideosInput.value),
+      }),
     };
 
     setFormStatus("Saving...");

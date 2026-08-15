@@ -24,6 +24,7 @@ router.delete("/products/:id", productController.deleteProduct);
 
 router.post("/uploads", uploadImages, uploadController.uploadImages);
 router.post("/uploads/video", uploadVideo, uploadController.uploadTestimonialVideo);
+router.post("/uploads/product-video", uploadVideo, uploadController.uploadProductVideo);
 
 router.get("/testimonials", testimonialController.listAllTestimonials);
 router.post("/testimonials", testimonialController.createTestimonial);

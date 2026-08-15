@@ -42,7 +42,7 @@
     var list = document.getElementById("productDetailSpecsList");
     var entries = Object.keys(specs || {})
       .filter(function (key) {
-        return specs[key];
+        return specs[key] && !["cardDesktopImage", "cardMobileImage", "videos"].includes(key);
       })
       .map(function (key) {
         return [key, specs[key]];
@@ -82,10 +82,39 @@
     document.getElementById("qtyValue").textContent = qty;
   }
 
-  function renderThumbnails(images, mainImageEl, thumbsEl) {
-    var gallery = (images || []).filter(Boolean);
+  function videoPosterUrl(src) {
+    var value = String(src || "");
+    if (value.indexOf("/video/upload/") === -1) return "";
+    return value
+      .replace("/video/upload/", "/image/upload/")
+      .replace(/\.[a-z0-9]+(?=($|\?))/i, ".jpg");
+  }
+
+  function playableVideoUrl(src) {
+    var value = String(src || "");
+    if (value.indexOf("res.cloudinary.com") === -1 || value.indexOf("/video/upload/") === -1) return value;
+
+    return value
+      .replace("/video/upload/", "/video/upload/f_mp4,vc_h264/")
+      .replace(/\.[a-z0-9]+(?=($|\?))/i, ".mp4");
+  }
+
+  function renderThumbnails(images, videos, mainImageEl, mainVideoEl, thumbsEl) {
+    var gallery = (images || []).filter(Boolean).map(function (src) {
+      return { type: "image", src: src };
+    }).concat((videos || []).filter(Boolean).map(function (src) {
+      return { type: "video", src: src };
+    }));
 
     thumbsEl.innerHTML = "";
+
+    if (gallery[0] && gallery[0].type === "video") {
+      mainImageEl.hidden = true;
+      mainVideoEl.hidden = false;
+      mainVideoEl.src = playableVideoUrl(gallery[0].src);
+      mainVideoEl.poster = videoPosterUrl(gallery[0].src);
+      mainVideoEl.load();
+    }
 
     if (gallery.length < 2) {
       thumbsEl.hidden = true;
@@ -94,20 +123,46 @@
 
     thumbsEl.hidden = false;
 
-    gallery.forEach(function (src, index) {
+    gallery.forEach(function (item, index) {
       var thumb = document.createElement("button");
       thumb.type = "button";
       thumb.className = "product-thumb" + (index === 0 ? " is-active" : "");
-      thumb.setAttribute("aria-label", "Show image " + (index + 1));
+      thumb.setAttribute("aria-label", item.type === "video" ? "Play product video" : "Show image " + (index + 1));
 
-      var img = document.createElement("img");
-      img.src = src;
-      img.alt = "";
-      img.loading = "lazy";
-      thumb.appendChild(img);
+      if (item.type === "video") {
+        var videoThumb = document.createElement("video");
+        videoThumb.src = playableVideoUrl(item.src);
+        videoThumb.poster = videoPosterUrl(item.src);
+        videoThumb.muted = true;
+        videoThumb.playsInline = true;
+        videoThumb.preload = "metadata";
+        thumb.appendChild(videoThumb);
+
+        var videoLabel = document.createElement("span");
+        videoLabel.className = "product-thumb-video-label";
+        videoLabel.textContent = "Video";
+        thumb.appendChild(videoLabel);
+      } else {
+        var img = document.createElement("img");
+        img.src = item.src;
+        img.alt = "";
+        img.loading = "lazy";
+        thumb.appendChild(img);
+      }
 
       thumb.addEventListener("click", function () {
-        mainImageEl.src = src;
+        if (item.type === "video") {
+          mainImageEl.hidden = true;
+          mainVideoEl.hidden = false;
+          mainVideoEl.src = playableVideoUrl(item.src);
+          mainVideoEl.poster = videoPosterUrl(item.src);
+          mainVideoEl.load();
+        } else {
+          mainVideoEl.pause();
+          mainVideoEl.hidden = true;
+          mainImageEl.hidden = false;
+          mainImageEl.src = item.src;
+        }
         thumbsEl.querySelectorAll(".product-thumb").forEach(function (el) {
           el.classList.remove("is-active");
         });
@@ -116,6 +171,7 @@
 
       thumbsEl.appendChild(thumb);
     });
+
   }
 
   function escapeHtml(value) {
@@ -128,12 +184,20 @@
   }
 
   function relatedCardMarkup(product) {
-    var image = product.images && product.images[0];
+    var specs = product.specs || {};
+    var desktopImage = specs.cardDesktopImage || (product.images && product.images[0]);
+    var mobileImage = specs.cardMobileImage;
+    var imageMarkup = desktopImage
+      ? '<picture>' +
+        (mobileImage ? '<source media="(max-width: 560px)" srcset="' + escapeHtml(mobileImage) + '" />' : "") +
+        '<img src="' + escapeHtml(desktopImage) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' +
+        '</picture>'
+      : "";
 
     return [
       '<a class="product-card showcase-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
       '<div class="product-card-media">',
-      image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' : "",
+      imageMarkup,
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",
       "</div>",
       '<div class="product-card-body">',
@@ -287,25 +351,35 @@
     return existing ? existing.quantity : 0;
   }
 
-  function enableHoverZoom(frame, image) {
-    if (!frame || !image || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  function enableHoverZoom(frame, image, video) {
+    if (!frame || !image) return;
+
+    function photoIsVisible() {
+      return !image.hidden && (!video || video.hidden);
+    }
 
     function setZoomOrigin(event) {
+      if (!photoIsVisible()) return;
       var rect = frame.getBoundingClientRect();
       var x = ((event.clientX - rect.left) / rect.width) * 100;
       var y = ((event.clientY - rect.top) / rect.height) * 100;
       image.style.transformOrigin = Math.max(0, Math.min(100, x)) + "% " + Math.max(0, Math.min(100, y)) + "%";
     }
 
-    frame.addEventListener("mouseenter", function (event) {
+    function clearZoom() {
+      frame.classList.remove("is-hover-zoomed");
+      image.style.transformOrigin = "center center";
+    }
+
+    frame.addEventListener("pointerenter", function (event) {
+      if (event.pointerType === "touch" || !photoIsVisible()) return;
       setZoomOrigin(event);
       frame.classList.add("is-hover-zoomed");
     });
-    frame.addEventListener("mousemove", setZoomOrigin);
-    frame.addEventListener("mouseleave", function () {
-      frame.classList.remove("is-hover-zoomed");
-      image.style.transformOrigin = "center center";
+    frame.addEventListener("pointermove", function (event) {
+      if (event.pointerType !== "touch") setZoomOrigin(event);
     });
+    frame.addEventListener("pointerleave", clearZoom);
   }
 
   async function loadCategoryName(categoryId) {
@@ -336,13 +410,17 @@
       document.title = "Vibecraft — " + product.name;
       loadCategoryName(product.categoryId);
 
+      var productSpecs = product.specs || {};
+      var videos = Array.isArray(productSpecs.videos) ? productSpecs.videos : [];
       var image = product.images && product.images[0];
       var imageEl = document.getElementById("productDetailImage");
-      enableHoverZoom(document.querySelector(".product-detail-image-frame"), imageEl);
+      var videoEl = document.getElementById("productDetailVideo");
+      enableHoverZoom(document.querySelector(".product-detail-image-frame"), imageEl, videoEl);
       var lightbox = document.getElementById("productLightbox");
       var lightboxImage = document.getElementById("productLightboxImage");
       imageEl.src = image || "";
       imageEl.alt = product.name;
+      videoEl.hidden = true;
       var zoomButton = document.getElementById("productImageZoom");
       if (zoomButton) {
         zoomButton.addEventListener("click", function () {
@@ -355,14 +433,13 @@
       lightbox.addEventListener("click", function (event) {
         if (event.target === lightbox) lightbox.close();
       });
-      renderThumbnails(product.images, imageEl, document.getElementById("productDetailThumbs"));
+      renderThumbnails(product.images, videos, imageEl, videoEl, document.getElementById("productDetailThumbs"));
 
       document.getElementById("productDetailName").textContent = product.name;
       document.getElementById("productDetailPrice").innerHTML = priceMarkup(product);
       document.getElementById("productDetailSummary").textContent = product.shortSummary || "";
 
       var visualFacts = document.getElementById("productVisualFacts");
-      var productSpecs = product.specs || {};
       var factEntries = [
         ["Resolution", product.resolution || productSpecs.resolution],
         ["Brightness", product.brightness || productSpecs.brightness],
@@ -378,6 +455,7 @@
       var stock = Number(product.stock || 0);
       var stockEl = document.getElementById("productDetailStock");
       var addButton = document.getElementById("addToCartButton");
+      var buyNowButton = document.getElementById("buyNowButton");
       var qtyMinusButton = document.getElementById("qtyMinus");
       var qtyPlusButton = document.getElementById("qtyPlus");
       var addStatus = document.getElementById("addToCartStatus");
@@ -405,6 +483,7 @@
           qty = 0;
           addButton.textContent = "Out of stock";
           addButton.disabled = true;
+          buyNowButton.disabled = true;
           qtyMinusButton.disabled = true;
           qtyPlusButton.disabled = true;
           setQtyDisplay();
@@ -425,6 +504,8 @@
           addButton.textContent = "Add to cart";
           addButton.disabled = false;
         }
+
+        buyNowButton.disabled = false;
 
         setQtyDisplay();
       }
@@ -465,6 +546,24 @@
         setTimeout(function () {
           addStatus.textContent = "";
         }, 2500);
+      });
+
+      buyNowButton.addEventListener("click", async function () {
+        if (!window.VibecraftApi || outOfStock) return;
+
+        buyNowButton.disabled = true;
+        var customer = await window.VibecraftApi.getCurrentCustomer();
+        if (!customer) {
+          window.location.href = "login.html?next=cart.html";
+          return;
+        }
+
+        if (getCartQuantity(product.id) > 0) {
+          window.VibecraftCart.setQuantity(product.id, qty);
+        } else {
+          window.VibecraftCart.addItem(product.id, qty);
+        }
+        window.location.href = "cart.html";
       });
 
       document.addEventListener("cart:change", syncAddToCartUI);

@@ -12,6 +12,11 @@
 
   var itemsList = document.getElementById("cartItemsList");
   var checkoutSubtotal = document.getElementById("checkoutSubtotal");
+  var checkoutDeliveryFeeRow = document.getElementById("checkoutDeliveryFeeRow");
+  var checkoutDeliveryFeeLabel = document.getElementById("checkoutDeliveryFeeLabel");
+  var checkoutDeliveryFee = document.getElementById("checkoutDeliveryFee");
+  var checkoutTotal = document.getElementById("checkoutTotal");
+  var checkoutCounty = document.getElementById("checkoutCounty");
   var form = document.getElementById("checkoutForm");
   var checkoutAuthGate = document.getElementById("checkoutAuthGate");
   var checkoutStatus = document.getElementById("checkoutStatus");
@@ -55,7 +60,17 @@
   }
 
   function updateSubtotal(amount) {
+    var hasItems = window.VibecraftCart.getItems().length > 0;
+    var county = checkoutCounty.value;
+    var deliveryFee = hasItems && county && window.VibecraftDelivery
+      ? window.VibecraftDelivery.getFee(county)
+      : 0;
+
     checkoutSubtotal.textContent = formatPrice(amount);
+    checkoutDeliveryFee.textContent = formatPrice(deliveryFee);
+    checkoutDeliveryFeeLabel.textContent = county ? "(" + county + ")" : "";
+    checkoutDeliveryFeeRow.hidden = !hasItems || !county;
+    checkoutTotal.textContent = formatPrice(amount + deliveryFee);
   }
 
   function renderReceipt(order) {
@@ -116,7 +131,11 @@
       address ? "<p>" + escapeHtml(address) + (delivery.landmark ? " · Near " + escapeHtml(delivery.landmark) : "") + "</p>" : "",
       preferredDelivery ? "<p>Preferred time: " + escapeHtml(preferredDelivery) + "</p>" : "",
       "</div>",
-      '<div class="receipt-total"><span>Total</span><strong>',
+      '<div class="receipt-total receipt-subtotal"><span>Items subtotal</span><strong>',
+      formatPrice(Number(order.subtotal || Math.max(0, Number(order.total || 0) - Number(order.deliveryFee || 0)))),
+      '</strong></div><div class="receipt-total receipt-delivery-fee"><span>Transport fee</span><strong>',
+      formatPrice(order.deliveryFee || 0),
+      '</strong></div><div class="receipt-total"><span>Total</span><strong>',
       formatPrice(order.total),
       '</strong></div><p class="receipt-payment"><strong>Payment:</strong> ',
       order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
@@ -293,6 +312,10 @@
     document.getElementById("checkoutDeliveryDate").min = new Date().toISOString().slice(0, 10);
   }
 
+  function refreshCheckoutTotals() {
+    updateSubtotal(computeSubtotal(window.VibecraftCart.getItems()));
+  }
+
   function restoreLastReceipt() {
     if (window.VibecraftCart.getItems().length) return;
 
@@ -307,6 +330,7 @@
   async function boot() {
     populateCounties();
     setDeliveryDateMin();
+    checkoutCounty.addEventListener("change", refreshCheckoutTotals);
 
     try {
       customerAccount = await window.VibecraftApi.getCurrentCustomer();

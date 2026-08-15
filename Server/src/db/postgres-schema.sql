@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS orders (
   notes TEXT,
   total INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
   currency TEXT NOT NULL DEFAULT 'KES',
+  delivery_fee INTEGER NOT NULL DEFAULT 0 CHECK (delivery_fee >= 0),
   delivery_county TEXT,
   delivery_town TEXT,
   delivery_address TEXT,

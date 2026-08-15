@@ -36,9 +36,9 @@
     '<section class="room-showcase section-shell" id="rooms">',
     '  <div class="section-heading"><div><p class="eyebrow">Shop by room</p><h2>See it <em>there.</em></h2></div><p class="section-note">A better picture starts with the right space.</p></div>',
     '  <div class="room-grid">',
-    '    <a class="room-tile room-tile-home" href="#collection" data-room-filter="portable"><span>Home cinema</span><strong>Settle in</strong></a>',
-    '    <a class="room-tile room-tile-office" href="#collection" data-room-filter="office"><span>Work &amp; learn</span><strong>Bring clarity</strong></a>',
-    '    <a class="room-tile room-tile-outdoor" href="#collection" data-room-filter="all"><span>Open air</span><strong>Take it outside</strong></a>',
+    '    <a class="room-tile room-tile-home" href="#collection" data-room-filter="portable"><span>MOVIE NIGHTS</span><strong>Your cinema. Your rules.</strong></a>',
+    '    <a class="room-tile room-tile-office" href="#collection" data-room-filter="office"><span>WORK &amp; LEARN</span><strong>Make every detail bigger.</strong></a>',
+    '    <a class="room-tile room-tile-outdoor" href="#collection" data-room-filter="all"><span>MATCH DAY</span><strong>Never miss the action.</strong></a>',
     '  </div>',
     '</section>',
   ].join("");
@@ -65,6 +65,17 @@
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function cardImageMarkup(product, fallback, alt, loading) {
+    var specs = product.specs || {};
+    var desktopImage = specs.cardDesktopImage || (product.images && product.images[0]) || fallback;
+    var mobileImage = specs.cardMobileImage;
+
+    return '<picture>' +
+      (mobileImage ? '<source media="(max-width: 560px)" srcset="' + escapeHtml(mobileImage) + '" />' : '') +
+      '<img src="' + escapeHtml(desktopImage) + '" alt="' + escapeHtml(alt) + '" loading="' + loading + '" />' +
+      '</picture>';
   }
 
   function formatPrice(amount, currency) {
@@ -96,11 +107,10 @@
   }
 
   function productMarkup(product, index) {
-    var image = product.images && product.images[0] ? product.images[0] : "assets/outdoor-cinema.jpg";
     var isWishlisted = window.VibecraftWishlist && window.VibecraftWishlist.has(product.id);
     return [
       '<article class="product-card showcase-card" data-product-id="' + escapeHtml(product.id) + '" data-category="' + escapeHtml(product.categoryId) + '" data-type="' + escapeHtml(product.projectorType || "") + '">',
-      '<a class="showcase-card-link" data-product-link href="product.html?id=' + encodeURIComponent(product.id) + '"><div class="product-card-media"><img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index < 3 ? "eager" : "lazy") + '" />',
+      '<a class="showcase-card-link" data-product-link href="product.html?id=' + encodeURIComponent(product.id) + '"><div class="product-card-media">' + cardImageMarkup(product, "assets/outdoor-cinema.jpg", product.name, index < 3 ? "eager" : "lazy"),
       '</div>',
       '<div class="product-card-body"><h3>' + escapeHtml(product.name) + '</h3>',
       '<div class="showcase-card-meta">' + priceMarkup(product) + '</div></div></a>',

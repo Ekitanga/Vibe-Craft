@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-    <link rel="stylesheet" href="style.css?v=admin-no-theme-1" />
+    <link rel="stylesheet" href="style.css?v=admin-form-tidy-2" />
   </head>
   <body>
     <header class="site-header">
@@ -97,7 +97,7 @@
               <textarea id="productDescription" required></textarea>
             </div>
             <div class="field">
-              <label for="productImages">Images <small>(paste URLs, one per line — or upload from your device)</small></label>
+              <label for="productImages">Images <small>(URLs or upload multiple)</small></label>
               <textarea id="productImages"></textarea>
               <div class="image-upload-row">
                 <label class="button button-outline image-upload-button" for="productImageFiles">
@@ -106,7 +106,48 @@
                 </label>
                 <span class="form-status" id="productImageUploadStatus"></span>
               </div>
+              <p class="field-hint">First image = main image. Use “Use as main” to change it.</p>
               <div class="image-preview-strip" id="productImagePreview"></div>
+            </div>
+            <div class="field">
+              <label>Desktop &amp; mobile display images <small>(optional)</small></label>
+              <div class="form-grid card-image-grid">
+                <div class="field">
+                  <label for="productDesktopCardImage">Desktop display image URL</label>
+                  <input id="productDesktopCardImage" type="url" placeholder="Uses the main image if empty" />
+                  <div class="image-upload-row">
+                    <label class="button button-outline image-upload-button" for="productDesktopCardImageFile">
+                      Upload desktop image
+                      <input id="productDesktopCardImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                    </label>
+                    <span class="form-status" id="productDesktopCardImageStatus"></span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="productMobileCardImage">Mobile display image URL</label>
+                  <input id="productMobileCardImage" type="url" placeholder="Uses the desktop image if empty" />
+                  <div class="image-upload-row">
+                    <label class="button button-outline image-upload-button" for="productMobileCardImageFile">
+                      Upload mobile image
+                      <input id="productMobileCardImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                    </label>
+                    <span class="form-status" id="productMobileCardImageStatus"></span>
+                  </div>
+                </div>
+              </div>
+              <p class="field-hint">Desktop uses the desktop image. Mobile uses the mobile image. Empty fields use the main image.</p>
+            </div>
+            <div class="field">
+              <label for="productVideos">Product videos <small>(one URL per line or upload)</small></label>
+              <textarea id="productVideos" placeholder="https://.../product-demo.mp4"></textarea>
+              <div class="image-upload-row">
+                <label class="button button-outline image-upload-button" for="productVideoFile">
+                  Upload product video
+                  <input id="productVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime" hidden />
+                </label>
+                <span class="form-status" id="productVideoUploadStatus"></span>
+              </div>
+              <p class="field-hint">Shown with the product images. MP4, WEBM, or MOV up to 80MB.</p>
             </div>
             <div class="field">
               <label for="productBoxItems">What's in the box <small>(one per line, optional)</small></label>
@@ -153,6 +194,6 @@
     <script src="api.js"></script>
     <script src="app.js?v=admin-no-theme-1"></script>
     <script src="admin.js"></script>
-    <script src="admin-products.js"></script>
+    <script src="admin-products.js?v=product-video-2"></script>
   </body>
 </html>

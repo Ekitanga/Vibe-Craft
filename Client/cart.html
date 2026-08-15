@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-    <link rel="stylesheet" href="style.css?v=mobile-menu-glass-2" />
+    <link rel="stylesheet" href="style.css?v=navbar-normal-1" />
   </head>
   <body>
     <header class="site-header">
@@ -150,7 +150,12 @@
                 <input id="checkoutMpesaCode" placeholder="e.g. QGH7XXXXXX" />
               </div>
 
-              <div class="cart-summary-total"><span>Subtotal</span><strong id="checkoutSubtotal">KES 0</strong></div>
+              <div class="cart-summary-total cart-summary-subtotal"><span>Subtotal</span><strong id="checkoutSubtotal">KES 0</strong></div>
+              <div class="cart-summary-total cart-summary-delivery" id="checkoutDeliveryFeeRow" hidden>
+                <span>Transport fee <small id="checkoutDeliveryFeeLabel"></small></span>
+                <strong id="checkoutDeliveryFee">KES 0</strong>
+              </div>
+              <div class="cart-summary-total cart-summary-grand-total"><span>Total</span><strong id="checkoutTotal">KES 0</strong></div>
 
               <button class="button button-dark auth-submit" type="submit">Place order</button>
               <p class="form-status" id="checkoutStatus" role="status"></p>
@@ -185,6 +190,7 @@
     <script src="api.js?v=auth-order-1"></script>
     <script src="cart-store.js"></script>
     <script src="app.js?v=auth-order-1"></script>
-    <script src="cart.js?v=auth-order-1"></script>
+    <script src="delivery-fees.js?v=delivery-fees-1"></script>
+    <script src="cart.js?v=delivery-fees-1"></script>
   </body>
 </html>

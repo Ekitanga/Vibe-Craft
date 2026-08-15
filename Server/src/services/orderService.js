@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const db = require("../db/postgres");
 const HttpError = require("../utils/httpError");
 const { getProductById } = require("./productService");
+const { getDeliveryFee } = require("../config/deliveryFees");
 
 const allowedStatuses = ["pending", "confirmed", "processing", "completed", "cancelled"];
 
@@ -21,6 +22,8 @@ const mapOrderRow = (row) => ({
   notes: row.notes || "",
   status: row.status,
   total: Number(row.total || 0),
+  subtotal: Math.max(0, Number(row.total || 0) - Number(row.delivery_fee || 0)),
+  deliveryFee: Number(row.delivery_fee || 0),
   currency: row.currency,
   delivery: {
     county: row.delivery_county,
@@ -158,6 +161,7 @@ const listOrders = async () => {
       o.notes,
       o.status,
       o.total,
+      o.delivery_fee,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -190,6 +194,7 @@ const listOrdersForAccount = async ({ accountId, email }) => {
       o.notes,
       o.status,
       o.total,
+      o.delivery_fee,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -225,6 +230,7 @@ const getOrderById = async (id) => {
       o.notes,
       o.status,
       o.total,
+      o.delivery_fee,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -260,10 +266,12 @@ const createOrder = async (payload, customerAccountId) => {
   validateDelivery(payload.delivery);
 
   const items = await normalizeItems(payload.items);
-  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const customerId = crypto.randomUUID();
   const orderId = crypto.randomUUID();
   const delivery = payload.delivery || {};
+  const deliveryFee = getDeliveryFee(delivery.county);
+  const total = subtotal + deliveryFee;
   const location = payload.customer.location || [delivery.town, delivery.county].filter(Boolean).join(", ");
 
   await db.withTransaction(async (client) => {
@@ -275,17 +283,18 @@ const createOrder = async (payload, customerAccountId) => {
 
     await client.query(
       `INSERT INTO orders (
-        id, customer_id, customer_account_id, notes, status, total, currency,
+        id, customer_id, customer_account_id, notes, status, total, currency, delivery_fee,
         delivery_county, delivery_town, delivery_address, delivery_landmark,
         preferred_delivery_date, preferred_delivery_time, mpesa_code
       )
-       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12)`,
+       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         orderId,
         customerId,
         customerAccountId || null,
         payload.notes || "",
         total,
+        deliveryFee,
         delivery.county,
         delivery.town,
         delivery.address,

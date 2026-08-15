@@ -99,4 +99,24 @@ const uploadTestimonialVideo = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { uploadAvatar, uploadImages, uploadTestimonialVideo };
+const uploadProductVideo = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new HttpError(400, "No video was uploaded.");
+  }
+
+  if (!env.cloudinaryCloudName || !env.cloudinaryApiKey || !env.cloudinaryApiSecret) {
+    throw new HttpError(500, "Cloudinary is not configured on the server.");
+  }
+
+  const video = await uploadToCloudinary(req.file, "vibecraft/products", "video");
+
+  res.status(201).json({
+    success: true,
+    data: {
+      videoUrl: video.secure_url,
+      posterUrl: videoPosterUrl(video.secure_url),
+    },
+  });
+});
+
+module.exports = { uploadAvatar, uploadImages, uploadTestimonialVideo, uploadProductVideo };

@@ -40,6 +40,17 @@
       .replace(/'/g, "&#039;");
   }
 
+  function heroImageMarkup(product, index) {
+    var specs = product.specs || {};
+    var desktopImage = specs.cardDesktopImage || (product.images && product.images[0]) || "assets/outdoor-cinema.jpg";
+    var mobileImage = specs.cardMobileImage;
+
+    return '<picture>' +
+      (mobileImage ? '<source media="(max-width: 820px)" srcset="' + escapeHtml(mobileImage) + '" />' : '') +
+      '<img src="' + escapeHtml(desktopImage) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index === 0 ? "eager" : "lazy") + '" />' +
+      '</picture>';
+  }
+
   function stockInfo(product) {
     var stock = Number(product.stock || 0);
     if (stock <= 0) return { label: "Out of stock", className: "is-out" };
@@ -56,13 +67,12 @@
   }
 
   function slideMarkup(product, index, categoryName) {
-    var image = (product.images && product.images[0]) || "assets/outdoor-cinema.jpg";
     var description = product.shortSummary || product.description || "";
     var stock = stockInfo(product);
 
     return [
       '<div class="hero-slide' + (index === 0 ? " is-active" : "") + '" data-index="' + index + '" aria-hidden="' + (index === 0 ? "false" : "true") + '">',
-      '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index === 0 ? "eager" : "lazy") + '" />',
+      heroImageMarkup(product, index),
       '<div class="hero-slide-scrim"></div>',
       '<div class="hero-slide-info">',
       '<div class="hero-slide-badges">',

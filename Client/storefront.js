@@ -39,6 +39,18 @@
       .replace(/'/g, "&#039;");
   }
 
+  function cardImageMarkup(product) {
+    var specs = product.specs || {};
+    var desktopImage = specs.cardDesktopImage || (product.images && product.images[0]);
+    var mobileImage = specs.cardMobileImage;
+    if (!desktopImage && !mobileImage) return "";
+
+    return '<picture>' +
+      (mobileImage ? '<source media="(max-width: 560px)" srcset="' + escapeHtml(mobileImage) + '" />' : '') +
+      '<img src="' + escapeHtml(desktopImage || mobileImage) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' +
+      '</picture>';
+  }
+
   function skeletonCardMarkup() {
     return [
       '<article class="product-card is-skeleton" aria-hidden="true">',
@@ -70,7 +82,6 @@
   }
 
   function productCardMarkup(product) {
-    var image = product.images && product.images[0];
     var stock = Number(product.stock || 0);
     var lowStock = stock > 0 && stock <= 3;
     var outOfStock = stock <= 0;
@@ -79,7 +90,7 @@
     return [
       '<a class="product-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
       '<div class="product-card-media">',
-      image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy" />' : "",
+      cardImageMarkup(product),
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",
       "</div>",
       '<div class="product-card-body">',
