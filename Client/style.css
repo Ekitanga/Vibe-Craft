@@ -3320,6 +3320,25 @@ body:has(.ai-page) .theme-toggle:hover { border-color: var(--lime); background: 
   box-shadow: 0 16px 34px rgba(17, 18, 15, .14);
 }
 
+/* Keep the four circular product actions inside narrow cards on every phone. */
+@media (max-width: 560px) {
+  .showcase-card-actions {
+    width: min(calc(100% - 22px), 174px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(3px, 1.5vw, 6px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .showcase-card-cart,
+  .showcase-card-icon {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+}
+
 /* Apply the glass treatment to every navbar control, not just the outer header. */
 @media (min-width: 821px) {
   body:not(:has(.ai-page)) .nav-pill .site-nav a,
