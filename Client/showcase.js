@@ -111,6 +111,7 @@
     return [
       '<article class="product-card showcase-card" data-product-id="' + escapeHtml(product.id) + '" data-category="' + escapeHtml(product.categoryId) + '" data-type="' + escapeHtml(product.projectorType || "") + '">',
       '<a class="showcase-card-link" data-product-link href="product.html?id=' + encodeURIComponent(product.id) + '"><div class="product-card-media">' + cardImageMarkup(product, "assets/outdoor-cinema.jpg", product.name, index < 3 ? "eager" : "lazy"),
+      product.featured ? '<span class="product-card-badge">Featured</span>' : "",
       '</div>',
       '<div class="product-card-body"><h3>' + escapeHtml(product.name) + '</h3>',
       '<div class="showcase-card-meta">' + priceMarkup(product) + '</div></div></a>',
