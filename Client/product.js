@@ -456,10 +456,15 @@
       var stockEl = document.getElementById("productDetailStock");
       var addButton = document.getElementById("addToCartButton");
       var buyNowButton = document.getElementById("buyNowButton");
+      var whatsappButton = document.getElementById("whatsappProductButton");
       var qtyMinusButton = document.getElementById("qtyMinus");
       var qtyPlusButton = document.getElementById("qtyPlus");
       var addStatus = document.getElementById("addToCartStatus");
       var outOfStock = stock <= 0;
+
+      whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
+        "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + window.location.href
+      );
 
       if (outOfStock) {
         stockEl.textContent = "Out of stock";
