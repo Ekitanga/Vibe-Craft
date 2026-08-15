@@ -17,6 +17,8 @@
 
   var CART_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>';
+  var WHATSAPP_ICON =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg>';
   var CHECK_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L15 7.5"/></svg>';
 
@@ -66,6 +68,12 @@
     return '<span class="hero-slide-meta-price price-current">' + priceFormatter.format(price) + '</span><del class="hero-slide-meta-price-compare">' + priceFormatter.format(compareAtPrice) + '</del><span class="hero-slide-meta-discount">-' + discountPercent + '%</span>';
   }
 
+  function whatsappUrl(product) {
+    var productUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
+    var message = "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + productUrl;
+    return "https://wa.me/254707472897?text=" + encodeURIComponent(message);
+  }
+
   function slideMarkup(product, index, categoryName) {
     var description = product.shortSummary || product.description || "";
     var stock = stockInfo(product);
@@ -98,6 +106,7 @@
         ">" +
         CART_ICON +
         "</button>",
+      '<a class="hero-slide-whatsapp" href="' + whatsappUrl(product) + '" target="_blank" rel="noopener noreferrer" aria-label="Get instant help about ' + escapeHtml(product.name) + ' on WhatsApp">' + WHATSAPP_ICON + "</a>",
       "</div>",
       "</div>",
       "</div>",

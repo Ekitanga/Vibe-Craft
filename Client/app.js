@@ -49,6 +49,13 @@
 
   if (year) year.textContent = new Date().getFullYear();
 
+  document.querySelectorAll('a[href*="wa.me/"]').forEach(function (link) {
+    var url = new URL(link.href, window.location.href);
+    if (url.hostname !== "wa.me") return;
+    link.href = "https://wa.me/254707472897" + url.search;
+    if (link.textContent.indexOf("WhatsApp:") !== -1) link.textContent = "WhatsApp: 0707 472897";
+  });
+
   if (menuToggle && siteNav) {
     function setMenuState(isOpen) {
       siteNav.classList.toggle("is-open", isOpen);

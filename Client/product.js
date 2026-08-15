@@ -463,8 +463,9 @@
       var outOfStock = stock <= 0;
 
       whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
-        "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + window.location.href
+        "Hi Vibecraft, I'd like to order or ask about " + product.name + ". Product link: " + window.location.href
       );
+      whatsappButton.setAttribute("aria-label", "Get instant help about " + product.name + " on WhatsApp");
 
       if (outOfStock) {
         stockEl.textContent = "Out of stock";

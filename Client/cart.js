@@ -140,7 +140,7 @@
       '</strong></div><p class="receipt-payment"><strong>Payment:</strong> ',
       order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
       '</p><div class="receipt-actions"><button class="button button-dark" type="button" id="printReceipt">Print / save PDF</button>',
-      '<a class="button button-outline" href="https://wa.me/254707333983?text=',
+      '<a class="button button-outline" href="https://wa.me/254707472897?text=',
       encodeURIComponent(whatsappText),
       '" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div></div>',
     ].join("");
