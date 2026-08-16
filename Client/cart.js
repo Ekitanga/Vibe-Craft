@@ -59,6 +59,19 @@
     }, 0);
   }
 
+  function pixelCartParams(cartItems, value) {
+    return {
+      content_ids: cartItems.map(function (item) { return item.productId; }),
+      contents: cartItems.map(function (item) {
+        return { id: item.productId, quantity: item.quantity };
+      }),
+      content_type: "product",
+      num_items: cartItems.reduce(function (sum, item) { return sum + item.quantity; }, 0),
+      value: Number(value || 0),
+      currency: "KES",
+    };
+  }
+
   function updateSubtotal(amount) {
     var hasItems = window.VibecraftCart.getItems().length > 0;
     var county = checkoutCounty.value;
@@ -268,6 +281,9 @@
       });
 
       var order = response && response.data ? response.data : {};
+      if (window.VibecraftMeta) {
+        window.VibecraftMeta.track("Purchase", pixelCartParams(cartItems, order.total || computeSubtotal(cartItems)));
+      }
       try {
         window.sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
       } catch (_error) {
@@ -337,6 +353,10 @@
       var payload = await window.VibecraftApi.get("products");
       products = (payload && payload.data) || [];
       render();
+      var cartItems = window.VibecraftCart.getItems();
+      if (cartItems.length && window.VibecraftMeta) {
+        window.VibecraftMeta.track("InitiateCheckout", pixelCartParams(cartItems, computeSubtotal(cartItems)));
+      }
       if (customerAccount) {
         restoreLastReceipt();
         prefillFromAccount();

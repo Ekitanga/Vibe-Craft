@@ -26,6 +26,10 @@
         password: form.password.value,
       });
 
+      if (window.VibecraftMeta) {
+        window.VibecraftMeta.track("CompleteRegistration", { status: true });
+      }
+
       window.location.href = window.VibecraftApi.safeNext("account.html");
     } catch (error) {
       setStatus(error.message || "Could not create your account.", true);

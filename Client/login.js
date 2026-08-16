@@ -25,6 +25,7 @@
       });
 
       if (payload.data && payload.data.user) {
+        if (window.VibecraftMeta) window.VibecraftMeta.track("Login", { status: true });
         window.location.href = window.VibecraftApi.safeNext("index.html");
         return;
       }

@@ -407,6 +407,16 @@
       var payload = await window.VibecraftApi.get("products/" + id);
       var product = payload.data;
 
+      if (window.VibecraftMeta) {
+        window.VibecraftMeta.track("ViewContent", {
+          content_ids: [product.id],
+          content_name: product.name,
+          content_type: "product",
+          value: Number(product.price || 0),
+          currency: product.currency || "KES",
+        });
+      }
+
       document.title = "Vibecraft — " + product.name;
       loadCategoryName(product.categoryId);
 
@@ -465,6 +475,9 @@
       whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
         "Hi Vibecraft, I'd like to order or ask about " + product.name + ". Product link: " + window.location.href
       );
+      whatsappButton.setAttribute("data-meta-event", "ContactButtonClick");
+      whatsappButton.setAttribute("data-meta-custom", "true");
+      whatsappButton.setAttribute("data-meta-label", "Product WhatsApp");
       whatsappButton.setAttribute("aria-label", "Get instant help about " + product.name + " on WhatsApp");
 
       if (outOfStock) {
@@ -547,6 +560,16 @@
         }
 
         window.VibecraftCart.addItem(product.id, qty);
+        if (window.VibecraftMeta) {
+          window.VibecraftMeta.track("AddToCart", {
+            content_ids: [product.id],
+            content_name: product.name,
+            content_type: "product",
+            contents: [{ id: product.id, quantity: qty }],
+            value: Number(product.price || 0) * qty,
+            currency: product.currency || "KES",
+          });
+        }
         syncAddToCartUI();
         addStatus.textContent = "Added to cart.";
         setTimeout(function () {
@@ -568,6 +591,16 @@
           window.VibecraftCart.setQuantity(product.id, qty);
         } else {
           window.VibecraftCart.addItem(product.id, qty);
+        }
+        if (window.VibecraftMeta) {
+          window.VibecraftMeta.track("AddToCart", {
+            content_ids: [product.id],
+            content_name: product.name,
+            content_type: "product",
+            contents: [{ id: product.id, quantity: qty }],
+            value: Number(product.price || 0) * qty,
+            currency: product.currency || "KES",
+          });
         }
         window.location.href = "cart.html";
       });
