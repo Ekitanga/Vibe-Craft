@@ -202,8 +202,8 @@
       removeThinking();
       appendMessage("assistant", reply);
 
-      if (!leadTracked && window.VibecraftMeta) {
-        window.VibecraftMeta.track("Lead", { content_name: "Vibecraft setup finder" });
+      if (!leadTracked && typeof window.fbq === "function") {
+        window.fbq("track", "Lead", { content_name: "Vibecraft setup finder" });
         leadTracked = true;
       }
 

@@ -26,8 +26,8 @@
         password: form.password.value,
       });
 
-      if (window.VibecraftMeta) {
-        window.VibecraftMeta.track("CompleteRegistration", { status: true });
+      if (typeof window.fbq === "function") {
+        window.fbq("track", "CompleteRegistration", { status: true });
       }
 
       window.location.href = window.VibecraftApi.safeNext("account.html");

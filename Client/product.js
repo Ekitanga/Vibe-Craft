@@ -407,14 +407,15 @@
       var payload = await window.VibecraftApi.get("products/" + id);
       var product = payload.data;
 
-      if (window.VibecraftMeta) {
-        window.VibecraftMeta.track("ViewContent", {
-          content_ids: [product.id],
-          content_name: product.name,
-          content_type: "product",
-          value: Number(product.price || 0),
-          currency: product.currency || "KES",
-        });
+      var viewContentParams = {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        value: Number(product.price || 0),
+        currency: product.currency || "KES",
+      };
+      if (typeof window.fbq === "function") {
+        window.fbq("track", "ViewContent", viewContentParams);
       }
 
       document.title = "Vibecraft — " + product.name;

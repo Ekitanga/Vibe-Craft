@@ -276,8 +276,9 @@
       });
 
       var order = response && response.data ? response.data : {};
-      if (window.VibecraftMeta) {
-        window.VibecraftMeta.track("Purchase", pixelCartParams(cartItems, order.total || computeSubtotal(cartItems)));
+      var purchaseParams = pixelCartParams(cartItems, order.total || computeSubtotal(cartItems));
+      if (typeof window.fbq === "function") {
+        window.fbq("track", "Purchase", purchaseParams);
       }
       try {
         window.sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
@@ -349,8 +350,8 @@
       products = (payload && payload.data) || [];
       render();
       var cartItems = window.VibecraftCart.getItems();
-      if (cartItems.length && window.VibecraftMeta) {
-        window.VibecraftMeta.track("InitiateCheckout", pixelCartParams(cartItems, computeSubtotal(cartItems)));
+      if (cartItems.length && typeof window.fbq === "function") {
+        window.fbq("track", "InitiateCheckout", pixelCartParams(cartItems, computeSubtotal(cartItems)));
       }
       if (customerAccount) {
         restoreLastReceipt();
