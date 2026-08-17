@@ -476,8 +476,8 @@
       );
       whatsappButton.setAttribute("data-meta-event", "ContactButtonClick");
       whatsappButton.setAttribute("data-meta-custom", "true");
-      whatsappButton.setAttribute("data-meta-label", "Product WhatsApp");
-      whatsappButton.setAttribute("aria-label", "Get instant help about " + product.name + " on WhatsApp");
+      whatsappButton.setAttribute("data-meta-label", "WhatsApp us");
+      whatsappButton.setAttribute("aria-label", "WhatsApp us about " + product.name);
 
       if (outOfStock) {
         stockEl.textContent = "Out of stock";
