@@ -550,15 +550,18 @@
 
         addButton.disabled = true;
         window.VibecraftCart.addItem(product.id, qty);
-        if (window.VibecraftMeta) {
-          window.VibecraftMeta.track("AddToCart", {
-            content_ids: [product.id],
-            content_name: product.name,
-            content_type: "product",
-            contents: [{ id: product.id, quantity: qty }],
-            value: Number(product.price || 0) * qty,
-            currency: product.currency || "KES",
-          });
+        var addToCartParams = {
+          content_ids: [product.id],
+          content_name: product.name,
+          content_type: "product",
+          contents: [{ id: product.id, quantity: qty }],
+          value: Number(product.price || 0) * qty,
+          currency: product.currency || "KES",
+        };
+        if (typeof window.fbq === "function") {
+          window.fbq("track", "AddToCart", addToCartParams);
+        } else if (window.VibecraftMeta) {
+          window.VibecraftMeta.track("AddToCart", addToCartParams);
         }
         syncAddToCartUI();
         addStatus.textContent = "Added to cart.";
