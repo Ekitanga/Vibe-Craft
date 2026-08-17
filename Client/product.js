@@ -467,6 +467,7 @@
       var stockEl = document.getElementById("productDetailStock");
       var addButton = document.getElementById("addToCartButton");
       var whatsappButton = document.getElementById("whatsappProductButton");
+      var buyNowButton = document.getElementById("buyNowButton");
       var qtyMinusButton = document.getElementById("qtyMinus");
       var qtyPlusButton = document.getElementById("qtyPlus");
       var addStatus = document.getElementById("addToCartStatus");
@@ -502,6 +503,7 @@
           qty = 0;
           addButton.textContent = "Out of stock";
           addButton.disabled = true;
+          buyNowButton.disabled = true;
           qtyMinusButton.disabled = true;
           qtyPlusButton.disabled = true;
           setQtyDisplay();
@@ -523,6 +525,7 @@
           addButton.disabled = false;
         }
 
+        buyNowButton.disabled = false;
         setQtyDisplay();
       }
 
@@ -569,6 +572,29 @@
         setTimeout(function () {
           addStatus.textContent = "";
         }, 2500);
+      });
+
+      buyNowButton.addEventListener("click", function () {
+        if (!window.VibecraftCart || outOfStock) return;
+
+        buyNowButton.disabled = true;
+        if (getCartQuantity(product.id) > 0) {
+          window.VibecraftCart.setQuantity(product.id, qty);
+        } else {
+          window.VibecraftCart.addItem(product.id, qty);
+        }
+        var buyNowParams = {
+          content_ids: [product.id],
+          content_name: product.name,
+          content_type: "product",
+          contents: [{ id: product.id, quantity: qty }],
+          value: Number(product.price || 0) * qty,
+          currency: product.currency || "KES",
+        };
+        if (typeof window.fbq === "function") {
+          window.fbq("track", "AddToCart", buyNowParams);
+        }
+        window.location.href = "cart.html";
       });
 
       document.addEventListener("cart:change", syncAddToCartUI);
