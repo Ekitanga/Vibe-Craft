@@ -55,7 +55,7 @@
 
     list.innerHTML = entries
       .map(function (entry) {
-        return "<dt>" + humanizeKey(entry[0]) + "</dt><dd>" + entry[1] + "</dd>";
+        return "<li><strong>" + escapeHtml(humanizeKey(entry[0])) + ":</strong> " + escapeHtml(entry[1]) + "</li>";
       })
       .join("");
     wrap.hidden = false;
