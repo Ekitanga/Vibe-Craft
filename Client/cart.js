@@ -18,7 +18,6 @@
   var checkoutTotal = document.getElementById("checkoutTotal");
   var checkoutCounty = document.getElementById("checkoutCounty");
   var form = document.getElementById("checkoutForm");
-  var checkoutAuthGate = document.getElementById("checkoutAuthGate");
   var checkoutStatus = document.getElementById("checkoutStatus");
   var checkoutReceipt = document.getElementById("checkoutReceipt");
   var products = [];
@@ -194,13 +193,11 @@
     if (!cartItems.length) {
       itemsList.innerHTML = '<p class="cart-empty-state">Your cart is empty. <a href="index.html#collection">Browse the range</a>.</p>';
       form.hidden = true;
-      if (checkoutAuthGate) checkoutAuthGate.hidden = true;
       updateSubtotal(0);
       return;
     }
 
-    form.hidden = !customerAccount;
-    if (checkoutAuthGate) checkoutAuthGate.hidden = Boolean(customerAccount);
+    form.hidden = false;
 
     itemsList.innerHTML = cartItems
       .map(function (item) {
@@ -244,9 +241,7 @@
     var cartItems = window.VibecraftCart.getItems();
     if (!cartItems.length) return;
 
-    var customer = await window.VibecraftApi.requireCustomer();
-    if (!customer) return;
-    customerAccount = customer;
+    customerAccount = await window.VibecraftApi.getCurrentCustomer();
 
     if (!form.checkValidity()) {
       form.reportValidity();

@@ -545,16 +545,10 @@
         }
       });
 
-      addButton.addEventListener("click", async function () {
-        if (!window.VibecraftApi) return;
+      addButton.addEventListener("click", function () {
+        if (!window.VibecraftCart || outOfStock) return;
 
         addButton.disabled = true;
-        var customer = await window.VibecraftApi.requireCustomer();
-        if (!customer) {
-          addButton.disabled = false;
-          return;
-        }
-
         window.VibecraftCart.addItem(product.id, qty);
         if (window.VibecraftMeta) {
           window.VibecraftMeta.track("AddToCart", {
