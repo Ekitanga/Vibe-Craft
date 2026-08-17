@@ -465,7 +465,6 @@
       var stock = Number(product.stock || 0);
       var stockEl = document.getElementById("productDetailStock");
       var addButton = document.getElementById("addToCartButton");
-      var buyNowButton = document.getElementById("buyNowButton");
       var whatsappButton = document.getElementById("whatsappProductButton");
       var qtyMinusButton = document.getElementById("qtyMinus");
       var qtyPlusButton = document.getElementById("qtyPlus");
@@ -502,7 +501,6 @@
           qty = 0;
           addButton.textContent = "Out of stock";
           addButton.disabled = true;
-          buyNowButton.disabled = true;
           qtyMinusButton.disabled = true;
           qtyPlusButton.disabled = true;
           setQtyDisplay();
@@ -523,8 +521,6 @@
           addButton.textContent = "Add to cart";
           addButton.disabled = false;
         }
-
-        buyNowButton.disabled = false;
 
         setQtyDisplay();
       }
@@ -575,34 +571,6 @@
         setTimeout(function () {
           addStatus.textContent = "";
         }, 2500);
-      });
-
-      buyNowButton.addEventListener("click", async function () {
-        if (!window.VibecraftApi || outOfStock) return;
-
-        buyNowButton.disabled = true;
-        var customer = await window.VibecraftApi.getCurrentCustomer();
-        if (!customer) {
-          window.location.href = "login.html?next=cart.html";
-          return;
-        }
-
-        if (getCartQuantity(product.id) > 0) {
-          window.VibecraftCart.setQuantity(product.id, qty);
-        } else {
-          window.VibecraftCart.addItem(product.id, qty);
-        }
-        if (window.VibecraftMeta) {
-          window.VibecraftMeta.track("AddToCart", {
-            content_ids: [product.id],
-            content_name: product.name,
-            content_type: "product",
-            contents: [{ id: product.id, quantity: qty }],
-            value: Number(product.price || 0) * qty,
-            currency: product.currency || "KES",
-          });
-        }
-        window.location.href = "cart.html";
       });
 
       document.addEventListener("cart:change", syncAddToCartUI);
