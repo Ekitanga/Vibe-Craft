@@ -274,7 +274,7 @@
     }
     suggestions.hidden = false;
     input.value = "";
-    appendMessage("assistant", "Fresh question? Tell me what you want to watch, where the projector will live, or what you want to spend.");
+    appendMessage("assistant", "Fresh question? Ask about a projector, delivery, shop location, payment, or how to reach us.");
     input.focus();
   });
 
@@ -282,6 +282,6 @@
 
   appendMessage(
     "assistant",
-    "Hey! Tell me what you want to watch, where the projector will live, or what you want to spend. I will turn the catalog into a short list that actually makes sense."
+    "Hey! Ask me about projectors, delivery, shop collection, our Nairobi location, payment, or how to reach us. I will turn the catalog into a short answer that actually makes sense."
   );
 })();
