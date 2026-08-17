@@ -25,7 +25,6 @@
       });
 
       if (payload.data && payload.data.user) {
-        if (typeof window.fbq === "function") window.fbq("track", "Login", { status: true });
         window.location.href = window.VibecraftApi.safeNext("index.html");
         return;
       }

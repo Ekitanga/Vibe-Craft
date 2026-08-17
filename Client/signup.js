@@ -26,10 +26,6 @@
         password: form.password.value,
       });
 
-      if (typeof window.fbq === "function") {
-        window.fbq("track", "CompleteRegistration", { status: true });
-      }
-
       window.location.href = window.VibecraftApi.safeNext("account.html");
     } catch (error) {
       setStatus(error.message || "Could not create your account.", true);

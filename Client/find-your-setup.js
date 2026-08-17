@@ -11,7 +11,6 @@
   var compareButton = document.getElementById("aiCompareButton");
   var comparisonResult = document.getElementById("aiComparisonResult");
   var newQuestionButton = document.getElementById("aiNewQuestion");
-  var leadTracked = false;
 
   if (!form) return;
 
@@ -201,11 +200,6 @@
 
       removeThinking();
       appendMessage("assistant", reply);
-
-      if (!leadTracked && typeof window.fbq === "function") {
-        window.fbq("track", "Lead", { content_name: "Vibecraft setup finder" });
-        leadTracked = true;
-      }
 
       history.push({ role: "user", content: trimmed });
       history.push({ role: "assistant", content: reply });

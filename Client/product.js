@@ -407,17 +407,6 @@
       var payload = await window.VibecraftApi.get("products/" + id);
       var product = payload.data;
 
-      var viewContentParams = {
-        content_ids: [product.id],
-        content_name: product.name,
-        content_type: "product",
-        value: Number(product.price || 0),
-        currency: product.currency || "KES",
-      };
-      if (typeof window.fbq === "function") {
-        window.fbq("track", "ViewContent", viewContentParams);
-      }
-
       document.title = "Vibecraft — " + product.name;
       loadCategoryName(product.categoryId);
 
@@ -476,9 +465,6 @@
       whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
         "Hi Vibecraft, I'd like to order or ask about " + product.name + ". Product link: " + window.location.href
       );
-      whatsappButton.setAttribute("data-meta-event", "ContactButtonClick");
-      whatsappButton.setAttribute("data-meta-custom", "true");
-      whatsappButton.setAttribute("data-meta-label", "WhatsApp us");
       whatsappButton.setAttribute("aria-label", "WhatsApp us about " + product.name);
 
       if (outOfStock) {
@@ -554,19 +540,6 @@
 
         addButton.disabled = true;
         window.VibecraftCart.addItem(product.id, qty);
-        var addToCartParams = {
-          content_ids: [product.id],
-          content_name: product.name,
-          content_type: "product",
-          contents: [{ id: product.id, quantity: qty }],
-          value: Number(product.price || 0) * qty,
-          currency: product.currency || "KES",
-        };
-        if (typeof window.fbq === "function") {
-          window.fbq("track", "AddToCart", addToCartParams);
-        } else if (window.VibecraftMeta) {
-          window.VibecraftMeta.track("AddToCart", addToCartParams);
-        }
         syncAddToCartUI();
         addStatus.textContent = "Added to cart.";
         setTimeout(function () {
@@ -582,17 +555,6 @@
           window.VibecraftCart.setQuantity(product.id, qty);
         } else {
           window.VibecraftCart.addItem(product.id, qty);
-        }
-        var buyNowParams = {
-          content_ids: [product.id],
-          content_name: product.name,
-          content_type: "product",
-          contents: [{ id: product.id, quantity: qty }],
-          value: Number(product.price || 0) * qty,
-          currency: product.currency || "KES",
-        };
-        if (typeof window.fbq === "function") {
-          window.fbq("track", "AddToCart", buyNowParams);
         }
         window.location.href = "cart.html";
       });
