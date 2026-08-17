@@ -412,6 +412,8 @@
 
       var productSpecs = product.specs || {};
       var videos = Array.isArray(productSpecs.videos) ? productSpecs.videos : [];
+      var videoLocation = document.getElementById("productDetailVideoLocation");
+      if (videoLocation) videoLocation.hidden = videos.length === 0;
       var image = product.images && product.images[0];
       var imageEl = document.getElementById("productDetailImage");
       var videoEl = document.getElementById("productDetailVideo");

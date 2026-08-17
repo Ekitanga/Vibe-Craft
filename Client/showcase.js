@@ -41,6 +41,29 @@
     '    <a class="room-tile room-tile-outdoor" href="#collection" data-room-filter="all"><span>MATCH DAY</span><strong>Never miss the action.</strong></a>',
     '  </div>',
     '</section>',
+    '<section class="store-location store-location-compact section-shell" id="find-us">',
+    '  <div class="store-location-copy">',
+    '    <p class="eyebrow"><span class="location-pin" aria-hidden="true">📍</span> Find Vibecraft</p>',
+    '    <p class="store-location-address"><strong>Rasumal House · 4th floor · Shop 14</strong><span>Opposite Imenti House · Tom Mboya Street, Nairobi</span></p>',
+    '  </div>',
+    '  <div class="store-location-actions">',
+    '    <button class="store-video-preview store-directions-trigger" id="storeDirectionsOpen" type="button" aria-label="Watch direction video">',
+    '      <video class="store-video-preview-video" id="storeDirectionsPreviewVideo" muted playsinline preload="auto" tabindex="-1" aria-hidden="true">',
+    '        <source src="assets/store-directions.mp4" type="video/mp4" />',
+    '      </video>',
+    '      <span class="store-video-preview-overlay"><span class="store-video-play" aria-hidden="true">▶</span><span>Watch directions</span></span>',
+    '    </button>',
+    '    <a class="store-map-button" href="https://www.google.com/maps/dir/?api=1&amp;destination=-1.2826763864005812%2C36.82444935619709" target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps" title="Open Google Maps"><img class="google-maps-icon" src="https://www.gstatic.com/images/branding/product/1x/maps_96dp.png" alt="" width="36" height="36" /></a>',
+    '  </div>',
+    '</section>',
+    '<dialog class="store-directions-dialog" id="storeDirectionsDialog" aria-labelledby="storeDirectionsTitle">',
+    '  <div class="store-directions-dialog-head"><div><p class="eyebrow">Getting here</p><h2 id="storeDirectionsTitle">See the direction video</h2></div><button class="store-directions-close" id="storeDirectionsClose" type="button" aria-label="Close direction video">✕</button></div>',
+    '  <video class="store-location-video" id="storeDirectionsVideo" controls playsinline preload="metadata">',
+    '    <source src="assets/store-directions.mp4" type="video/mp4" />',
+    '    Your browser does not support video playback.',
+    '  </video>',
+    '  <p class="store-directions-dialog-note"><span class="location-pin" aria-hidden="true">📍</span> Rasumal House, 4th floor, Shop 14, opposite Imenti House, Nairobi.</p>',
+    '</dialog>',
   ].join("");
 
   var gallery = document.getElementById("shopCategories");
@@ -51,6 +74,39 @@
   var searchInput = document.getElementById("productSearchInput");
   var searchStatus = document.getElementById("productSearchStatus");
   var products = [];
+  var storeDirectionsDialog = document.getElementById("storeDirectionsDialog");
+  var storeDirectionsVideo = document.getElementById("storeDirectionsVideo");
+  var storeDirectionsPreviewVideo = document.getElementById("storeDirectionsPreviewVideo");
+  var storeDirectionsOpen = document.getElementById("storeDirectionsOpen");
+  var storeDirectionsClose = document.getElementById("storeDirectionsClose");
+
+  if (storeDirectionsPreviewVideo) {
+    storeDirectionsPreviewVideo.addEventListener("loadeddata", function () {
+      var duration = Number.isFinite(storeDirectionsPreviewVideo.duration) ? storeDirectionsPreviewVideo.duration : 0;
+      if (!duration) return;
+      storeDirectionsPreviewVideo.currentTime = Math.min(1.2, Math.max(0, duration * 0.18));
+      storeDirectionsPreviewVideo.pause();
+    });
+  }
+
+  if (storeDirectionsOpen && storeDirectionsDialog) {
+    storeDirectionsOpen.addEventListener("click", function () {
+      storeDirectionsDialog.showModal();
+    });
+  }
+  if (storeDirectionsClose && storeDirectionsDialog) {
+    storeDirectionsClose.addEventListener("click", function () {
+      storeDirectionsDialog.close();
+    });
+  }
+  if (storeDirectionsDialog) {
+    storeDirectionsDialog.addEventListener("close", function () {
+      if (storeDirectionsVideo) storeDirectionsVideo.pause();
+    });
+    storeDirectionsDialog.addEventListener("click", function (event) {
+      if (event.target === storeDirectionsDialog) storeDirectionsDialog.close();
+    });
+  }
   var currencyFormatters = {};
   var activeFilter = "all";
   var searchQuery = new URLSearchParams(window.location.search).get("search") || "";

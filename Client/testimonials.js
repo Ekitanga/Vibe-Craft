@@ -42,6 +42,7 @@
       '<source src="' + escapeHtml(testimonial.videoUrl) + '" />',
       "</video>",
       "</div>",
+      '<p class="testimonial-video-location"><span class="location-pin" aria-hidden="true">📍</span> Find us at Rasumal House, 4th floor, Shop 14, opposite Imenti House, Nairobi. <a href="https://www.google.com/maps/dir/?api=1&amp;destination=-1.2826763864005812%2C36.82444935619709" target="_blank" rel="noopener noreferrer">Map ↗</a></p>',
       "</div>",
     ].join("");
   }
