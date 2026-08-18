@@ -412,8 +412,6 @@
 
       var productSpecs = product.specs || {};
       var videos = Array.isArray(productSpecs.videos) ? productSpecs.videos : [];
-      var videoLocation = document.getElementById("productDetailVideoLocation");
-      if (videoLocation) videoLocation.hidden = videos.length === 0;
       var image = product.images && product.images[0];
       var imageEl = document.getElementById("productDetailImage");
       var videoEl = document.getElementById("productDetailVideo");
@@ -456,12 +454,10 @@
 
       var stock = Number(product.stock || 0);
       var stockEl = document.getElementById("productDetailStock");
-      var addButton = document.getElementById("addToCartButton");
       var whatsappButton = document.getElementById("whatsappProductButton");
       var buyNowButton = document.getElementById("buyNowButton");
       var qtyMinusButton = document.getElementById("qtyMinus");
       var qtyPlusButton = document.getElementById("qtyPlus");
-      var addStatus = document.getElementById("addToCartStatus");
       var outOfStock = stock <= 0;
 
       whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
@@ -485,12 +481,9 @@
       renderList("productDetailBoxWrap", "productDetailBoxList", product.whatsInBox);
       renderList("productDetailUseCasesWrap", "productDetailUseCasesList", product.idealUseCases);
 
-      // Add to cart only ever adds once; once the item is in the cart, +/- adjust the cart quantity directly.
-      function syncAddToCartUI() {
+      function syncPurchaseUI() {
         if (outOfStock) {
           qty = 0;
-          addButton.textContent = "Out of stock";
-          addButton.disabled = true;
           buyNowButton.disabled = true;
           qtyMinusButton.disabled = true;
           qtyPlusButton.disabled = true;
@@ -505,12 +498,8 @@
 
         if (cartQty > 0) {
           qty = cartQty;
-          addButton.textContent = "Added to cart";
-          addButton.disabled = true;
         } else {
           qty = 1;
-          addButton.textContent = "Add to cart";
-          addButton.disabled = false;
         }
 
         buyNowButton.disabled = false;
@@ -520,7 +509,7 @@
       qtyMinusButton.addEventListener("click", function () {
         if (getCartQuantity(product.id) > 0) {
           window.VibecraftCart.setQuantity(product.id, getCartQuantity(product.id) - 1);
-          syncAddToCartUI();
+          syncPurchaseUI();
         } else {
           qty = Math.max(1, qty - 1);
           setQtyDisplay();
@@ -530,23 +519,11 @@
       qtyPlusButton.addEventListener("click", function () {
         if (getCartQuantity(product.id) > 0) {
           window.VibecraftCart.setQuantity(product.id, Math.min(maxQty, getCartQuantity(product.id) + 1));
-          syncAddToCartUI();
+          syncPurchaseUI();
         } else {
           qty = Math.min(maxQty, qty + 1);
           setQtyDisplay();
         }
-      });
-
-      addButton.addEventListener("click", function () {
-        if (!window.VibecraftCart || outOfStock) return;
-
-        addButton.disabled = true;
-        window.VibecraftCart.addItem(product.id, qty);
-        syncAddToCartUI();
-        addStatus.textContent = "Added to cart.";
-        setTimeout(function () {
-          addStatus.textContent = "";
-        }, 2500);
       });
 
       buyNowButton.addEventListener("click", function () {
@@ -561,9 +538,9 @@
         window.location.href = "cart.html";
       });
 
-      document.addEventListener("cart:change", syncAddToCartUI);
+      document.addEventListener("cart:change", syncPurchaseUI);
 
-      syncAddToCartUI();
+      syncPurchaseUI();
 
       status.hidden = true;
       detail.hidden = false;

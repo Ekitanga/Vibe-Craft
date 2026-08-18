@@ -1285,8 +1285,8 @@ body:has(.ai-page) .site-header {
 .store-directions-close:hover, .store-directions-close:focus-visible { background: var(--lime); color: var(--ink); outline: none; }
 .store-directions-dialog .store-location-video { width: 100%; height: auto; aspect-ratio: auto; max-height: 68dvh; object-fit: contain; object-position: center; border-radius: 14px; }
 .store-directions-dialog-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.product-video-location, .testimonial-video-location { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.product-video-location a, .testimonial-video-location a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.testimonial-video-location { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.testimonial-video-location a { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .testimonial-video-location { padding: 0 4px; }
 
 @media (max-width: 900px) {
