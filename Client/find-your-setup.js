@@ -9,6 +9,7 @@
   var compareFirst = document.getElementById("aiCompareFirst");
   var compareSecond = document.getElementById("aiCompareSecond");
   var compareButton = document.getElementById("aiCompareButton");
+  var compareLoading = document.getElementById("aiCompareLoading");
   var comparisonResult = document.getElementById("aiComparisonResult");
   var newQuestionButton = document.getElementById("aiNewQuestion");
 
@@ -251,6 +252,7 @@
       compareFirst.innerHTML = options;
       compareSecond.innerHTML = options;
       if (products.length > 1) compareSecond.selectedIndex = 1;
+      if (compareLoading) compareLoading.hidden = true;
       syncCompareButton();
     } catch (_error) {
       compareTools.hidden = true;

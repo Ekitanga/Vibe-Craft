@@ -24,7 +24,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-    <link rel="stylesheet" href="style.css?v=navbar-normal-1" />
+    <link rel="stylesheet" href="style.css?v=loading-dots-1" />
   </head>
   <body>
     <header class="site-header">
@@ -90,7 +90,7 @@
       <div class="account-page section-shell">
         <p class="eyebrow">Account</p>
         <h1 id="accountGreeting">Your account.</h1>
-        <p class="auth-intro" id="accountIntro">Loading your details…</p>
+        <p class="auth-intro" id="accountIntro"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading your details…</span></span></p>
 
         <div class="account-grid" id="accountContent" hidden>
           <div class="account-grid-main">
@@ -124,7 +124,7 @@
                 <span class="form-status" id="orderCount"></span>
               </div>
               <div id="ordersList">
-                <p class="cart-empty">Loading your orders…</p>
+                <p class="cart-empty"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading your orders…</span></span></p>
               </div>
             </section>
             <section class="admin-panel" id="wishlist">
@@ -133,7 +133,7 @@
                 <span class="form-status" id="wishlistCount"></span>
               </div>
               <div id="wishlistList">
-                <p class="cart-empty">Loading your wishlistâ€¦</p>
+                <p class="cart-empty"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading your wishlist…</span></span></p>
               </div>
             </section>
           </div>

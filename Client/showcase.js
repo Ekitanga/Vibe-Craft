@@ -30,7 +30,7 @@
     '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="portable">Portable</button>',
     '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="office">Office</button>',
     '  </div>',
-    '  <div class="showcase-grid" id="shopCategories" aria-live="polite"><p class="shop-rail-status" role="status">Loading products...</p></div>',
+    '  <div class="showcase-grid" id="shopCategories" aria-live="polite"><p class="shop-rail-status" role="status"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading products...</span></span></p></div>',
     '</section>',
     '<dialog class="quick-view-dialog" id="quickViewDialog" aria-labelledby="quickViewTitle"><button class="quick-view-close" type="button" data-close-quick-view aria-label="Close quick view">×</button><div id="quickViewContent"></div></dialog>',
     '<section class="room-showcase section-shell" id="rooms">',

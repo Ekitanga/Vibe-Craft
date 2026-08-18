@@ -245,6 +245,11 @@ h2 { max-width: 620px; margin-bottom: 0; font-size: clamp(42px, 6vw, 70px); lett
 .skeleton-bar.w-40 { width: 40%; }
 .skeleton-bar.heading { width: 160px; height: 18px; }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+.loading-state { display: inline-flex; align-items: center; gap: 8px; }
+.compare-loading { margin-top: 10px; color: var(--muted); font-size: 12px; }
+.loading-dot { position: relative; display: inline-block; flex: 0 0 44px; width: 44px; height: 44px; color: currentColor; background: radial-gradient(circle at 50% 5px, currentColor 0 5px, transparent 5.5px), radial-gradient(circle at calc(100% - 5px) 50%, currentColor 0 5px, transparent 5.5px), radial-gradient(circle at 50% calc(100% - 5px), currentColor 0 5px, transparent 5.5px), radial-gradient(circle at 5px 50%, currentColor 0 5px, transparent 5.5px); animation: loading-dot-rotate 1.15s linear infinite; }
+@keyframes loading-dot-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading-dot { animation-duration: 1.8s; } }
 @media (hover: hover) and (pointer: fine) {
   .product-card:hover { border-color: var(--text); box-shadow: 8px 8px 0 var(--lime); transform: translateY(-4px); }
   .product-card:hover .product-card-media img { transform: scale(1.06); }
