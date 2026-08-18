@@ -114,6 +114,26 @@
                 <input id="checkoutEmail" type="email" />
               </div>
 
+              <h3 class="checkout-section-heading">Delivery method</h3>
+              <p class="checkout-section-copy">Choose how you would like to receive your order.</p>
+              <div class="checkout-method-switch" role="group" aria-label="Delivery method">
+                <button class="checkout-method-card is-active" type="button" data-fulfilment-option="delivery" aria-pressed="true">
+                  <span class="checkout-method-icon" aria-hidden="true">🚚</span>
+                  <span class="checkout-method-copy"><strong>Deliver to me</strong><small>Doorstep delivery</small></span>
+                </button>
+                <button class="checkout-method-card" type="button" data-fulfilment-option="pickup" aria-pressed="false">
+                  <span class="checkout-method-icon" aria-hidden="true">📍</span>
+                  <span class="checkout-method-copy"><strong>Pick up at shop</strong><small>Ready in about 30 minutes</small></span>
+                </button>
+              </div>
+              <select id="checkoutFulfilment" class="checkout-fulfilment-select" aria-hidden="true" tabindex="-1">
+                <option value="delivery">Deliver to my address</option>
+                <option value="pickup">Pick up at our location</option>
+              </select>
+              <div class="checkout-pickup-card">
+                <p class="checkout-pickup-note"><strong>Pickup location:</strong> Nairobi CBD · Tom Mboya Street, opposite Imenti House · Rasumal House, 4th floor, Shop 14 — Dlight Gift Shop / Heltz Driving School building.</p>
+              </div>
+
               <h3 class="checkout-section-heading">Delivery details</h3>
               <div class="field">
                 <label for="checkoutCounty">County</label>

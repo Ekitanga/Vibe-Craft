@@ -17,6 +17,9 @@
   var checkoutDeliveryFee = document.getElementById("checkoutDeliveryFee");
   var checkoutTotal = document.getElementById("checkoutTotal");
   var checkoutCounty = document.getElementById("checkoutCounty");
+  var checkoutFulfilment = document.getElementById("checkoutFulfilment");
+  var checkoutFulfilmentOptions = document.querySelectorAll("[data-fulfilment-option]");
+  var checkoutPickupCard = document.querySelector(".checkout-pickup-card");
   var form = document.getElementById("checkoutForm");
   var checkoutStatus = document.getElementById("checkoutStatus");
   var checkoutReceipt = document.getElementById("checkoutReceipt");
@@ -27,6 +30,13 @@
     dateStyle: "medium",
     timeStyle: "short",
   });
+  var pickupDeliveryDraft = null;
+  var PICKUP_LOCATION = {
+    county: "Nairobi",
+    town: "Nairobi CBD",
+    address: "Rasumal House, 4th floor, Shop 14 — Dlight Gift Shop / Heltz Driving School building",
+    landmark: "Opposite Imenti House, Tom Mboya Street",
+  };
 
   function escapeHtml(value) {
     return String(value === undefined || value === null ? "" : value)
@@ -61,20 +71,58 @@
   function updateSubtotal(amount) {
     var hasItems = window.VibecraftCart.getItems().length > 0;
     var county = checkoutCounty.value;
-    var deliveryFee = hasItems && county && window.VibecraftDelivery
+    var isPickup = checkoutFulfilment && checkoutFulfilment.value === "pickup";
+    var deliveryFee = !isPickup && hasItems && county && window.VibecraftDelivery
       ? window.VibecraftDelivery.getFee(county)
       : 0;
 
     checkoutSubtotal.textContent = formatPrice(amount);
     checkoutDeliveryFee.textContent = formatPrice(deliveryFee);
     checkoutDeliveryFeeLabel.textContent = county ? "(" + county + ")" : "";
-    checkoutDeliveryFeeRow.hidden = !hasItems || !county;
+    checkoutDeliveryFeeRow.hidden = isPickup || !hasItems || !county;
     checkoutTotal.textContent = formatPrice(amount + deliveryFee);
+  }
+
+  function syncFulfilmentFields() {
+    var isPickup = checkoutFulfilment && checkoutFulfilment.value === "pickup";
+    var fieldIds = ["checkoutCounty", "checkoutTown", "checkoutAddress", "checkoutLandmark"];
+
+    checkoutFulfilmentOptions.forEach(function (option) {
+      var isActive = option.getAttribute("data-fulfilment-option") === checkoutFulfilment.value;
+      option.classList.toggle("is-active", isActive);
+      option.setAttribute("aria-pressed", String(isActive));
+    });
+    if (checkoutPickupCard) checkoutPickupCard.classList.toggle("is-visible", isPickup);
+
+    if (isPickup) {
+      if (!pickupDeliveryDraft) {
+        pickupDeliveryDraft = fieldIds.reduce(function (draft, id) {
+          draft[id] = document.getElementById(id).value;
+          return draft;
+        }, {});
+      }
+
+      document.getElementById("checkoutCounty").value = PICKUP_LOCATION.county;
+      document.getElementById("checkoutTown").value = PICKUP_LOCATION.town;
+      document.getElementById("checkoutAddress").value = PICKUP_LOCATION.address;
+      document.getElementById("checkoutLandmark").value = PICKUP_LOCATION.landmark;
+    } else if (pickupDeliveryDraft) {
+      fieldIds.forEach(function (id) {
+        document.getElementById(id).value = pickupDeliveryDraft[id] || "";
+      });
+      pickupDeliveryDraft = null;
+    }
+
+    fieldIds.forEach(function (id) {
+      document.getElementById(id).disabled = isPickup;
+    });
+    updateSubtotal(computeSubtotal(window.VibecraftCart.getItems()));
   }
 
   function renderReceipt(order) {
     var customer = order.customer || {};
     var delivery = order.delivery || {};
+    var pickupRequested = String(order.notes || "").indexOf("Pickup requested") !== -1;
     var orderNumber = order.orderNumber || "VC-" + String(order.id || "").replace(/-/g, "").slice(-8).toUpperCase();
     var paid = Boolean(order.paymentVerified);
     var paymentStatus = paid ? "Payment verified" : "Payment pending verification";
@@ -126,7 +174,7 @@
       '<div class="receipt-section"><h3>Items</h3><table class="receipt-items"><tbody>',
       itemRows,
       "</tbody></table></div>",
-      '<div class="receipt-section receipt-delivery"><h3>Delivery</h3>',
+      '<div class="receipt-section receipt-delivery"><h3>' + (pickupRequested ? "Pickup" : "Delivery") + "</h3>",
       address ? "<p>" + escapeHtml(address) + (delivery.landmark ? " · Near " + escapeHtml(delivery.landmark) : "") + "</p>" : "",
       preferredDelivery ? "<p>Preferred time: " + escapeHtml(preferredDelivery) + "</p>" : "",
       "</div>",
@@ -239,6 +287,8 @@
     checkoutStatus.textContent = "Placing your order...";
     checkoutStatus.classList.remove("is-error");
     submitButton.disabled = true;
+    var isPickup = checkoutFulfilment && checkoutFulfilment.value === "pickup";
+    var notesValue = document.getElementById("checkoutNotes").value.trim();
 
     try {
       var response = await window.VibecraftApi.post("orders", {
@@ -258,7 +308,9 @@
         items: cartItems.map(function (item) {
           return { productId: item.productId, quantity: item.quantity };
         }),
-        notes: document.getElementById("checkoutNotes").value.trim() || undefined,
+        notes: isPickup
+          ? ["Pickup requested at Vibecraft location.", notesValue].filter(Boolean).join(" ")
+          : notesValue || undefined,
         mpesaCode: document.getElementById("checkoutMpesaCode").value.trim() || undefined,
       });
 
@@ -326,6 +378,14 @@
     populateCounties();
     setDeliveryDateMin();
     checkoutCounty.addEventListener("change", refreshCheckoutTotals);
+    if (checkoutFulfilment) checkoutFulfilment.addEventListener("change", syncFulfilmentFields);
+    checkoutFulfilmentOptions.forEach(function (option) {
+      option.addEventListener("click", function () {
+        checkoutFulfilment.value = option.getAttribute("data-fulfilment-option");
+        syncFulfilmentFields();
+      });
+    });
+    syncFulfilmentFields();
 
     try {
       customerAccount = await window.VibecraftApi.getCurrentCustomer();
