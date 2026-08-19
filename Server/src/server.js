@@ -30,7 +30,7 @@ const startServer = async () => {
   await ensureBootstrapAdmin();
 
   app.listen(env.port, "0.0.0.0", () => {
-    console.log(`Vibecraft API listening on port ${env.port}`);
+    console.log(`Vibecraft API listening on port ${env.port} using Gemini model ${env.geminiModel}`);
   });
 };
 

@@ -34,8 +34,10 @@ const getClient = () => {
   return client;
 };
 
-const formatCatalogForPrompt = (products) =>
-  products.map((product) => ({
+const formatCatalogForPrompt = (products, detailedProductIds = new Set()) =>
+  products.map((product) => {
+    const includeDetails = detailedProductIds.has(product.id);
+    const catalogProduct = {
     name: product.name,
     brand: product.brand || undefined,
     category: product.categoryId,
@@ -51,12 +53,44 @@ const formatCatalogForPrompt = (products) =>
     wifi: product.wifi,
     bluetooth: product.bluetooth,
     summary: product.shortSummary || undefined,
-    description: product.description || undefined,
-    specs: product.specs && Object.keys(product.specs).length ? product.specs : undefined,
-    ideal_use_cases: product.idealUseCases && product.idealUseCases.length ? product.idealUseCases : undefined,
-    whats_in_box: product.whatsInBox && product.whatsInBox.length ? product.whatsInBox : undefined,
     product_url: "/product.html?id=" + product.id,
-  }));
+    };
+
+    if (includeDetails) {
+      catalogProduct.description = product.description || undefined;
+      catalogProduct.specs = product.specs && Object.keys(product.specs).length ? product.specs : undefined;
+      catalogProduct.ideal_use_cases = product.idealUseCases && product.idealUseCases.length ? product.idealUseCases : undefined;
+      catalogProduct.whats_in_box = product.whatsInBox && product.whatsInBox.length ? product.whatsInBox : undefined;
+    }
+
+    return catalogProduct;
+  });
+
+const PRODUCT_NAME_STOP_WORDS = new Set([
+  "android", "anti", "blue", "curtain", "foldable", "folding", "game", "gimbal", "grey", "hd",
+  "mini", "portable", "projector", "screen", "smart", "stand", "thin", "universal", "white",
+]);
+
+const findDetailedProductIds = (products, queryText) => {
+  const normalizedQuery = String(queryText || "").toLowerCase();
+  const detailedIds = new Set();
+
+  products.forEach((product) => {
+    const normalizedName = String(product.name || "").toLowerCase();
+    const nameTokens = normalizedName.split(/[^a-z0-9]+/).filter((token) =>
+      token.length >= 4 && !PRODUCT_NAME_STOP_WORDS.has(token)
+    );
+
+    if (
+      normalizedName && normalizedQuery.includes(normalizedName) ||
+      nameTokens.some((token) => normalizedQuery.includes(token))
+    ) {
+      detailedIds.add(product.id);
+    }
+  });
+
+  return detailedIds;
+};
 
 const buildSystemInstruction = (catalogJson) =>
   [
@@ -134,8 +168,13 @@ const chat = async ({ message, history }) => {
   contents.push({ role: "user", parts: [{ text: trimmedMessage }] });
 
   const products = await productService.listProducts();
+  const queryText = [
+    ...safeHistory.map((turn) => turn && turn.content ? String(turn.content) : ""),
+    trimmedMessage,
+  ].join(" ");
+  const detailedProductIds = findDetailedProductIds(products, queryText);
   // Whitespace has no value to the model but does consume input tokens.
-  const catalogJson = JSON.stringify(formatCatalogForPrompt(products));
+  const catalogJson = JSON.stringify(formatCatalogForPrompt(products, detailedProductIds));
 
   let response;
 
