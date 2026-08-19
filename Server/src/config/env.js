@@ -25,7 +25,9 @@ const env = {
   adminName: process.env.ADMIN_NAME || "Vibecraft Admin",
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-flash-latest",
+  // Use the lighter model by default. The `gemini-flash-latest` alias currently
+  // resolves to a high-demand model for some API projects and can return 503s.
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",

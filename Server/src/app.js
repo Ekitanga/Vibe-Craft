@@ -17,6 +17,10 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 const clientPath = path.join(__dirname, "../../Client");
 
+// Render terminates the public connection at a proxy. Trust that proxy so
+// req.ip contains the visitor's address for the AI rate limiter.
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: env.clientOrigin,

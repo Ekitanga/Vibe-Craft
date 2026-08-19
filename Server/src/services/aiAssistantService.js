@@ -4,7 +4,9 @@ const HttpError = require("../utils/httpError");
 const productService = require("./productService");
 
 const MAX_MESSAGE_LENGTH = 800;
-const MAX_HISTORY_TURNS = 12;
+// Keep the request small enough for the free-tier input-token limit. The
+// catalog is included on every request, so long histories can exhaust TPM fast.
+const MAX_HISTORY_TURNS = 6;
 
 const STORE_INFORMATION = {
   location: "Rasumal House, 4th floor, Shop 14, opposite Imenti House, Tom Mboya Street, Nairobi CBD, Kenya.",
@@ -132,7 +134,8 @@ const chat = async ({ message, history }) => {
   contents.push({ role: "user", parts: [{ text: trimmedMessage }] });
 
   const products = await productService.listProducts();
-  const catalogJson = JSON.stringify(formatCatalogForPrompt(products), null, 2);
+  // Whitespace has no value to the model but does consume input tokens.
+  const catalogJson = JSON.stringify(formatCatalogForPrompt(products));
 
   let response;
 
@@ -142,7 +145,7 @@ const chat = async ({ message, history }) => {
       contents,
       config: {
         systemInstruction: buildSystemInstruction(catalogJson),
-        maxOutputTokens: 2048,
+        maxOutputTokens: 768,
         temperature: 0.4,
       },
     });
