@@ -1,6 +1,161 @@
 (function () {
   "use strict";
 
+  var contact = window.VibecraftContact = window.VibecraftContact || {};
+  contact.whatsapp = contact.whatsapp || "0707 472897";
+  contact.toPhoneDigits = function (value) {
+    var digits = String(value || "").replace(/\D/g, "");
+    if (digits.indexOf("0") === 0) return "254" + digits.slice(1);
+    if (digits.indexOf("254") === 0) return digits;
+    return digits;
+  };
+  contact.toWhatsAppUrl = function (message) {
+    return "https://wa.me/" + contact.toPhoneDigits(contact.whatsapp) + (message ? "?text=" + encodeURIComponent(message) : "");
+  };
+  contact.applyWhatsAppLinks = function () {
+    var phoneDigits = contact.toPhoneDigits(contact.whatsapp);
+    if (!phoneDigits) return;
+    document.querySelectorAll('a[href*="wa.me/"]').forEach(function (link) {
+      var url = new URL(link.href, window.location.href);
+      if (url.hostname !== "wa.me") return;
+      link.href = "https://wa.me/" + phoneDigits + url.search;
+      if (link.id === "footerWhatsapp" || link.textContent.indexOf("WhatsApp:") !== -1) {
+        link.textContent = "WhatsApp: " + contact.whatsapp;
+      } else if (link.parentElement && link.parentElement.textContent.indexOf("WhatsApp:") !== -1 && link.textContent.trim()) {
+        link.textContent = contact.whatsapp;
+      }
+    });
+  };
+  contact.setWhatsApp = function (value) {
+    contact.whatsapp = value || contact.whatsapp;
+    contact.applyWhatsAppLinks();
+    window.dispatchEvent(new Event("vibecraft:contact-settings"));
+  };
+
+  var cleanPages = {
+    "index.html": "/",
+    "login.html": "/login",
+    "signup.html": "/signup",
+    "account.html": "/account",
+    "cart.html": "/cart",
+    "product.html": "/product",
+    "find-your-setup.html": "/find-your-setup",
+    "admin-dashboard.html": "/admin",
+    "admin-products.html": "/admin-products",
+    "admin-orders.html": "/admin-orders",
+    "admin-customers.html": "/admin-customers",
+    "admin-testimonials.html": "/admin-testimonials",
+    "admin-team.html": "/admin-team",
+    "admin-settings.html": "/admin-settings",
+    "admin-promotions.html": "/admin-promotions",
+  };
+
+  function cleanInternalUrl(rawUrl) {
+    var url = new URL(rawUrl, window.location.href);
+    if (url.origin !== window.location.origin) return null;
+    var fileName = url.pathname.split("/").pop();
+    var cleanPath = cleanPages[fileName];
+    return cleanPath ? cleanPath + url.search + url.hash : null;
+  }
+
+  document.querySelectorAll('a[href]').forEach(function (link) {
+    var cleanUrl = cleanInternalUrl(link.href);
+    if (cleanUrl) link.setAttribute("href", cleanUrl);
+  });
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var link = event.target.closest ? event.target.closest("a[href]") : null;
+    if (!link) return;
+    var cleanUrl = cleanInternalUrl(link.href);
+    if (!cleanUrl) return;
+    event.preventDefault();
+    window.location.assign(cleanUrl);
+  }, true);
+
+  if (!document.querySelector(".admin-nav") && window.VibecraftApi) {
+    function setText(id, value) {
+      var element = document.getElementById(id);
+      if (element && value !== undefined && value !== null) element.textContent = value;
+    }
+
+    function kenyaPhone(value) {
+      var digits = String(value || "").replace(/\D/g, "");
+      if (digits.indexOf("0") === 0) return "254" + digits.slice(1);
+      if (digits.indexOf("254") === 0) return digits;
+      return digits;
+    }
+
+    function applySocialLinks(links, storeName) {
+      var host = document.querySelector(".footer-social");
+      if (!host || !links || typeof links !== "object") return;
+      var keys = ["instagram", "tiktok", "facebook", "youtube"];
+      var anchors = keys.map(function (key, index) {
+        var anchor = host.querySelector('a[data-social-key="' + key + '"]');
+        if (!anchor && index < 2) anchor = host.querySelectorAll("a")[index];
+        if (anchor) anchor.setAttribute("data-social-key", key);
+        return anchor;
+      });
+      keys.forEach(function (key, index) {
+        var link = String((links || {})[key] || "").trim();
+        var anchor = anchors[index];
+        if (!anchor && link) {
+          anchor = document.createElement("a");
+          anchor.className = "social-configured-link";
+          anchor.target = "_blank";
+          anchor.rel = "noopener noreferrer";
+          anchor.setAttribute("data-social-key", key);
+          anchor.textContent = key === "youtube" ? "YT" : key.slice(0, 1).toUpperCase();
+          host.appendChild(anchor);
+          anchors[index] = anchor;
+        }
+        if (!anchor) return;
+        if (link) anchor.href = link;
+        anchor.hidden = !link;
+        anchor.setAttribute("aria-label", (storeName || "Store") + " on " + key);
+      });
+    }
+
+    window.VibecraftApi.get("settings").then(function (payload) {
+      var settings = (payload && payload.data) || {};
+      var root = document.documentElement;
+      if (/^#[0-9a-fA-F]{6}$/.test(settings.primaryColor || "")) root.style.setProperty("--orange", settings.primaryColor);
+      if (/^#[0-9a-fA-F]{6}$/.test(settings.accentColor || "")) root.style.setProperty("--lime", settings.accentColor);
+
+      document.querySelectorAll("[data-setting]").forEach(function (element) {
+        var value = settings[element.getAttribute("data-setting")];
+        if (value !== undefined && value !== null && value !== "") element.textContent = value;
+      });
+      setText("homeHeroTitle", settings.heroTitle);
+      setText("homeHeroDescription", settings.heroDescription);
+      setText("footerPaybill", settings.paybill);
+      setText("footerMpesaAccount", settings.mpesaAccount);
+      setText("checkoutPaybill", settings.paybill);
+      setText("checkoutMpesaAccount", settings.mpesaAccount);
+      setText("footerAddress", settings.address);
+      setText("footerOpeningHours", settings.openingHours);
+
+      var phone = settings.phone || "";
+      var whatsapp = settings.whatsapp || phone;
+      var phoneLink = document.getElementById("footerPhone");
+      var whatsappLink = document.getElementById("footerWhatsapp");
+      if (phoneLink) { phoneLink.textContent = "Call: " + phone; phoneLink.href = "tel:+" + kenyaPhone(phone); }
+      if (whatsappLink) { whatsappLink.textContent = "WhatsApp: " + whatsapp; whatsappLink.href = "https://wa.me/" + kenyaPhone(whatsapp); }
+      contact.setWhatsApp(whatsapp);
+      applySocialLinks(settings.socialLinks, settings.storeName);
+
+      var announcement = document.getElementById("storeAnnouncement");
+      if (announcement) { announcement.textContent = settings.announcement || ""; announcement.hidden = !settings.announcement; }
+      if (document.getElementById("homeHeroTitle")) document.title = (settings.storeName || "Vibecraft") + " — See more in every room";
+    }).catch(function () {
+      // The storefront keeps its built-in defaults when the API is unavailable.
+    });
+  }
+})();
+
+(function () {
+  "use strict";
+
   var STORAGE_KEY = "vibecraft_theme";
   var header = document.querySelector(".site-header");
 
@@ -49,12 +204,7 @@
 
   if (year) year.textContent = new Date().getFullYear();
 
-  document.querySelectorAll('a[href*="wa.me/"]').forEach(function (link) {
-    var url = new URL(link.href, window.location.href);
-    if (url.hostname !== "wa.me") return;
-    link.href = "https://wa.me/254707472897" + url.search;
-    if (link.textContent.indexOf("WhatsApp:") !== -1) link.textContent = "WhatsApp: 0707 472897";
-  });
+  if (window.VibecraftContact) window.VibecraftContact.applyWhatsAppLinks();
 
   if (menuToggle && siteNav) {
     function setMenuState(isOpen) {

@@ -16,6 +16,8 @@
   var checkoutDeliveryFeeLabel = document.getElementById("checkoutDeliveryFeeLabel");
   var checkoutDeliveryFee = document.getElementById("checkoutDeliveryFee");
   var checkoutTotal = document.getElementById("checkoutTotal");
+  var checkoutDiscountRow = document.getElementById("checkoutDiscountRow");
+  var checkoutDiscount = document.getElementById("checkoutDiscount");
   var checkoutCounty = document.getElementById("checkoutCounty");
   var checkoutFulfilment = document.getElementById("checkoutFulfilment");
   var checkoutFulfilmentOptions = document.querySelectorAll("[data-fulfilment-option]");
@@ -31,6 +33,7 @@
     timeStyle: "short",
   });
   var pickupDeliveryDraft = null;
+  var appliedPromotion = null;
   var PICKUP_LOCATION = {
     county: "Nairobi",
     town: "Nairobi CBD",
@@ -75,12 +78,19 @@
     var deliveryFee = !isPickup && hasItems && county && window.VibecraftDelivery
       ? window.VibecraftDelivery.getFee(county)
       : 0;
+    var freeDeliveryMinimum = window.VibecraftDelivery && window.VibecraftDelivery.getFreeDeliveryMinimum
+      ? window.VibecraftDelivery.getFreeDeliveryMinimum()
+      : 0;
+    if (!isPickup && freeDeliveryMinimum > 0 && amount >= freeDeliveryMinimum) deliveryFee = 0;
+    var discountAmount = appliedPromotion ? Number(appliedPromotion.discountAmount || 0) : 0;
 
     checkoutSubtotal.textContent = formatPrice(amount);
     checkoutDeliveryFee.textContent = formatPrice(deliveryFee);
     checkoutDeliveryFeeLabel.textContent = county ? "(" + county + ")" : "";
     checkoutDeliveryFeeRow.hidden = isPickup || !hasItems || !county;
-    checkoutTotal.textContent = formatPrice(amount + deliveryFee);
+    checkoutTotal.textContent = formatPrice(Math.max(0, amount + deliveryFee - discountAmount));
+    if (checkoutDiscountRow) checkoutDiscountRow.hidden = !discountAmount;
+    if (checkoutDiscount) checkoutDiscount.textContent = "− " + formatPrice(discountAmount);
   }
 
   function syncFulfilmentFields() {
@@ -182,14 +192,14 @@
       formatPrice(Number(order.subtotal || Math.max(0, Number(order.total || 0) - Number(order.deliveryFee || 0)))),
       '</strong></div><div class="receipt-total receipt-delivery-fee"><span>Transport fee</span><strong>',
       formatPrice(order.deliveryFee || 0),
-      '</strong></div><div class="receipt-total"><span>Total</span><strong>',
+      '</strong></div>',
+      Number(order.discountAmount || 0) ? '<div class="receipt-total receipt-discount"><span>Promotion (' + escapeHtml(order.promotionCode || "") + ')</span><strong>− ' + formatPrice(order.discountAmount || 0) + '</strong></div>' : "",
+      '<div class="receipt-total"><span>Total</span><strong>',
       formatPrice(order.total),
       '</strong></div><p class="receipt-payment"><strong>Payment:</strong> ',
       order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
       '</p><div class="receipt-actions"><button class="button button-dark" type="button" id="printReceipt">Print / save PDF</button>',
-      '<a class="button button-outline" href="https://wa.me/254707472897?text=',
-      encodeURIComponent(whatsappText),
-      '" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div></div>',
+      '<a class="button button-outline" href="' + (window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(whatsappText) : "https://wa.me/254707472897?text=" + encodeURIComponent(whatsappText)) + '" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div></div>',
     ].join("");
 
     checkoutReceipt.hidden = false;
@@ -267,7 +277,36 @@
       window.VibecraftCart.removeItem(removeId);
     }
 
+    if (appliedPromotion) {
+      appliedPromotion = null;
+      var promotionStatus = document.getElementById("promotionStatus");
+      if (promotionStatus) promotionStatus.textContent = "Cart changed — reapply your promotion code.";
+    }
     render();
+  });
+
+  document.getElementById("applyPromotion").addEventListener("click", async function () {
+    var input = document.getElementById("checkoutPromotionCode");
+    var promotionStatus = document.getElementById("promotionStatus");
+    var button = document.getElementById("applyPromotion");
+    var code = input.value.trim();
+    if (!code) { appliedPromotion = null; promotionStatus.textContent = "Enter a code first."; promotionStatus.classList.add("is-error"); return; }
+    button.disabled = true;
+    promotionStatus.textContent = "Checking…";
+    promotionStatus.classList.remove("is-error");
+    try {
+      var result = await window.VibecraftApi.post("promotions/validate", { code: code, subtotal: computeSubtotal(window.VibecraftCart.getItems()) });
+      appliedPromotion = result && result.data ? result.data : null;
+      promotionStatus.textContent = appliedPromotion ? "Promotion applied. ✨" : "Promotion could not be applied.";
+      updateSubtotal(computeSubtotal(window.VibecraftCart.getItems()));
+    } catch (error) {
+      appliedPromotion = null;
+      promotionStatus.textContent = error.message || "That code is not available.";
+      promotionStatus.classList.add("is-error");
+      updateSubtotal(computeSubtotal(window.VibecraftCart.getItems()));
+    } finally {
+      button.disabled = false;
+    }
   });
 
   form.addEventListener("submit", async function (event) {
@@ -312,6 +351,7 @@
           ? ["Pickup requested at Vibecraft location.", notesValue].filter(Boolean).join(" ")
           : notesValue || undefined,
         mpesaCode: document.getElementById("checkoutMpesaCode").value.trim() || undefined,
+        promotionCode: appliedPromotion ? appliedPromotion.promotion.code : undefined,
       });
 
       var order = response && response.data ? response.data : {};
@@ -348,11 +388,17 @@
 
   function populateCounties() {
     var select = document.getElementById("checkoutCounty");
+    var selectedCounty = select.value;
+    var counties = window.VibecraftDelivery && window.VibecraftDelivery.getAvailableCounties
+      ? window.VibecraftDelivery.getAvailableCounties()
+      : KENYA_COUNTIES;
+    if (selectedCounty && counties.indexOf(selectedCounty) === -1) selectedCounty = "";
     select.innerHTML =
       '<option value="">Choose a county</option>' +
-      KENYA_COUNTIES.map(function (county) {
-        return '<option value="' + county + '">' + county + "</option>";
+      counties.map(function (county) {
+        return '<option value="' + escapeHtml(county) + '">' + escapeHtml(county) + "</option>";
       }).join("");
+    select.value = selectedCounty;
   }
 
   function setDeliveryDateMin() {
@@ -360,6 +406,7 @@
   }
 
   function refreshCheckoutTotals() {
+    populateCounties();
     updateSubtotal(computeSubtotal(window.VibecraftCart.getItems()));
   }
 
@@ -378,6 +425,7 @@
     populateCounties();
     setDeliveryDateMin();
     checkoutCounty.addEventListener("change", refreshCheckoutTotals);
+    window.addEventListener("vibecraft:delivery-settings", refreshCheckoutTotals);
     if (checkoutFulfilment) checkoutFulfilment.addEventListener("change", syncFulfilmentFields);
     checkoutFulfilmentOptions.forEach(function (option) {
       option.addEventListener("click", function () {

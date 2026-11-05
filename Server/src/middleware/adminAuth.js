@@ -21,8 +21,16 @@ const requireAdmin = async (req, _res, next) => {
   }
 };
 
+const requireRole = (...roles) => (req, _res, next) => {
+  if (!req.admin || !roles.includes(req.admin.role)) {
+    return next(new HttpError(403, "You do not have permission to perform this action."));
+  }
+  return next();
+};
+
 module.exports = {
   adminSessionCookieName,
   getAdminSessionToken,
   requireAdmin,
+  requireRole,
 };

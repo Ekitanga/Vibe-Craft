@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Vibecraft promotion management." />
+    <title>Vibecraft — Promotions</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="admin-dashboard.html">Dashboard</a><a href="admin-products.html">Products</a><a href="admin-orders.html">Orders</a><a href="admin-customers.html">Customers</a><a href="admin-testimonials.html">Testimonials</a><a href="admin-team.html">Team</a><a href="admin-settings.html">Settings</a><a href="admin-promotions.html">Promotions</a>
+      </nav>
+      <div class="admin-account">
+        <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu"><span class="admin-account-avatar" id="adminAccountAvatar">A</span><span class="admin-account-caret">▾</span></button>
+        <div class="admin-account-menu" id="adminAccountMenu" role="menu" hidden><div class="admin-account-info"><strong id="adminAccountMenuName">Admin</strong><span id="adminAccountEmail"></span></div><a class="admin-account-item" href="index.html" role="menuitem">View store</a><div class="admin-account-divider"></div><button class="admin-account-item is-danger" id="adminSignOut" type="button" role="menuitem">Sign out</button></div>
+      </div>
+    </header>
+    <main><div class="admin-shell">
+      <div class="admin-topbar"><div><p class="eyebrow">Admin</p><h1>Promotions</h1></div><p class="admin-topbar-note">Create offers customers can use at checkout.</p></div>
+      <section class="admin-panel">
+        <div class="admin-panel-heading"><div><h2>Create promotion</h2><p class="panel-copy">Discounts are calculated and enforced by the server.</p></div></div>
+        <form id="promotionForm" novalidate>
+          <div class="form-grid">
+            <div class="field"><label for="promotionCode">Code</label><input id="promotionCode" required placeholder="VIBE10" /></div>
+            <div class="field"><label for="promotionDescription">Description</label><input id="promotionDescription" placeholder="10% off projector setups" /></div>
+            <div class="field"><label for="promotionType">Discount type</label><select id="promotionType"><option value="percent">Percentage</option><option value="fixed">Fixed KES amount</option></select></div>
+            <div class="field"><label for="promotionValue">Discount value</label><input id="promotionValue" type="number" min="1" step="1" required /></div>
+            <div class="field"><label for="promotionMinimum">Minimum subtotal</label><input id="promotionMinimum" type="number" min="0" step="1" value="0" required /></div>
+            <div class="field"><label for="promotionUsageLimit">Usage limit <small>(optional)</small></label><input id="promotionUsageLimit" type="number" min="1" step="1" placeholder="Unlimited" /></div>
+          </div>
+          <button class="button button-dark auth-submit" type="submit">Create promotion <span>↗</span></button>
+          <p class="form-status" id="promotionFormStatus" role="status"></p>
+        </form>
+      </section>
+      <section class="admin-panel"><div class="admin-panel-heading"><h2>All promotions</h2><span class="form-status" id="promotionCount"></span></div>
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Code</th><th>Offer</th><th>Minimum</th><th>Usage</th><th>Status</th><th>Action</th></tr></thead><tbody id="promotionsTableBody"><tr class="empty-row"><td colspan="6">Loading...</td></tr></tbody></table></div>
+      </section>
+    </div></main>
+    <script src="api.js"></script><script src="app.js?v=admin-no-theme-1"></script><script src="admin.js"></script><script src="admin-promotions.js"></script>
+  </body>
+</html>

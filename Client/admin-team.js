@@ -9,6 +9,7 @@
   var formStatus = document.getElementById("adminInviteStatus");
   var tableBody = document.getElementById("adminsTableBody");
   var adminCount = document.getElementById("adminCount");
+  var auditTableBody = document.getElementById("auditTableBody");
 
   var passwordForm = document.getElementById("adminChangePasswordForm");
   var passwordStatus = document.getElementById("adminChangePasswordStatus");
@@ -38,7 +39,7 @@
         var name = escape(admin.name || "Admin") + (admin.id === currentAdminId ? " (you)" : "");
         var date = admin.createdAt ? dateFormatter.format(new Date(admin.createdAt)) : "—";
 
-        return "<tr><td>" + name + "</td><td>" + escape(admin.email) + "</td><td>" + date + "</td></tr>";
+        return "<tr><td>" + name + "</td><td>" + escape(admin.email) + "</td><td>" + escape(admin.role || "admin") + "</td><td>" + date + "</td></tr>";
       })
       .join("");
   }
@@ -49,6 +50,21 @@
     renderAdmins();
   }
 
+  async function loadAudit() {
+    var payload = await window.VibecraftApi.get("admin/audit-logs?limit=50");
+    var logs = (payload && payload.data) || [];
+    if (!logs.length) {
+      auditTableBody.innerHTML = '<tr class="empty-row"><td colspan="4">No activity yet.</td></tr>';
+      return;
+    }
+    var escape = window.VibecraftAdmin.escapeHtml;
+    auditTableBody.innerHTML = logs.map(function (log) {
+      var details = Object.keys(log.details || {}).map(function (key) { return key + ": " + log.details[key]; }).join(", ");
+      var date = log.createdAt ? dateFormatter.format(new Date(log.createdAt)) : "—";
+      return "<tr><td>" + escape(log.adminName) + "</td><td>" + escape(log.action.replace(/_/g, " ")) + "</td><td>" + escape(details || "—") + "</td><td>" + date + "</td></tr>";
+    }).join("");
+  }
+
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
 
@@ -57,6 +73,7 @@
       name: document.getElementById("adminName").value.trim(),
       email: document.getElementById("adminEmail").value.trim(),
       password: document.getElementById("adminPassword").value,
+      role: document.getElementById("adminRole").value,
     };
 
     setFormStatus("Adding…");
@@ -66,6 +83,7 @@
       await window.VibecraftApi.post("admin/admins", payload);
       form.reset();
       await loadAdmins();
+      await loadAudit();
       setFormStatus("Admin added.");
     } catch (error) {
       setFormStatus(error.message || "Could not add this admin.", true);
@@ -108,8 +126,10 @@
 
     try {
       await loadAdmins();
+      await loadAudit();
     } catch (error) {
       tableBody.innerHTML = '<tr class="empty-row"><td colspan="3">Could not load admins.</td></tr>';
+      auditTableBody.innerHTML = '<tr class="empty-row"><td colspan="4">Could not load activity.</td></tr>';
     }
   }
 

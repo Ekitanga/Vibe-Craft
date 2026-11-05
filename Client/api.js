@@ -54,7 +54,7 @@
 
   function safeNext(fallback) {
     var next = new URLSearchParams(window.location.search).get("next") || "";
-    return /^[a-zA-Z0-9_-]+\.html(?:[?#][^<>]*)?$/.test(next) ? next : fallback;
+    return /^(?:\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+\.html)(?:[?#][^<>]*)?$/.test(next) ? next : fallback;
   }
 
   async function getCurrentCustomer() {
@@ -70,10 +70,9 @@
     var customer = await getCurrentCustomer();
     if (customer) return customer;
 
-    var fileName = window.location.pathname.split("/").pop() || "index.html";
-    if (!/^[a-zA-Z0-9_-]+\.html$/.test(fileName)) fileName = "index.html";
-    var next = fileName + window.location.search + window.location.hash;
-    window.location.href = "login.html?next=" + encodeURIComponent(next);
+    var currentPath = window.location.pathname === "/" ? "/" : window.location.pathname;
+    var next = currentPath + window.location.search + window.location.hash;
+    window.location.href = "/login?next=" + encodeURIComponent(next);
     return null;
   }
 

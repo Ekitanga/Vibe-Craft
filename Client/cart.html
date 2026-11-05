@@ -172,10 +172,16 @@
               </div>
 
               <h3 class="checkout-section-heading">Pay via M-Pesa</h3>
-              <p class="checkout-payment-details">Paybill: <strong>522533</strong> &middot; Account: <strong>8055906</strong></p>
+              <p class="checkout-payment-details">Paybill: <strong id="checkoutPaybill">522533</strong> &middot; Account: <strong id="checkoutMpesaAccount">8055906</strong></p>
               <div class="field">
                 <label for="checkoutMpesaCode">M-Pesa transaction code <small>(optional — you can also send it via WhatsApp after paying)</small></label>
                 <input id="checkoutMpesaCode" placeholder="e.g. QGH7XXXXXX" />
+              </div>
+
+              <div class="field checkout-promotion-field">
+                <label for="checkoutPromotionCode">Promotion code <small>(optional)</small></label>
+                <div class="checkout-promotion-row"><input id="checkoutPromotionCode" placeholder="e.g. VIBE10" /><button class="button button-outline" id="applyPromotion" type="button">Apply</button></div>
+                <p class="form-status" id="promotionStatus" role="status"></p>
               </div>
 
               <div class="cart-summary-total cart-summary-subtotal"><span>Subtotal</span><strong id="checkoutSubtotal">KES 0</strong></div>
@@ -183,6 +189,7 @@
                 <span>Transport fee <small id="checkoutDeliveryFeeLabel"></small></span>
                 <strong id="checkoutDeliveryFee">KES 0</strong>
               </div>
+              <div class="cart-summary-total cart-summary-discount" id="checkoutDiscountRow" hidden><span>Promotion</span><strong id="checkoutDiscount">− KES 0</strong></div>
               <div class="cart-summary-total cart-summary-grand-total"><span>Total</span><strong id="checkoutTotal">KES 0</strong></div>
 
               <button class="button button-dark auth-submit" type="submit">Place order</button>

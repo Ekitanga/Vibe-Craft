@@ -176,12 +176,16 @@
         window.VibecraftApi.get("admin/products"),
         window.VibecraftApi.get("admin/orders"),
         window.VibecraftApi.get("categories"),
+        window.VibecraftApi.get("settings"),
       ]);
       var products = (responses[0] && responses[0].data) || [];
       var orders = (responses[1] && responses[1].data) || [];
       var categories = (responses[2] && responses[2].data) || [];
+      var settings = (responses[3] && responses[3].data) || {};
+      var lowStockThreshold = Number(settings.lowStockThreshold);
+      if (!Number.isInteger(lowStockThreshold)) lowStockThreshold = window.VibecraftAdmin.lowStockThreshold;
       var lowStock = products.filter(function (product) {
-        return Number(product.stock || 0) <= window.VibecraftAdmin.lowStockThreshold;
+        return Number(product.stock || 0) <= lowStockThreshold;
       });
       var pending = orders.filter(function (order) {
         return order.status === "pending";

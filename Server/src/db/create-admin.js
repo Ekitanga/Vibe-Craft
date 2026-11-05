@@ -21,7 +21,8 @@ const main = async () => {
   const email = getArgValue("email") || process.env.ADMIN_EMAIL;
   const password = getArgValue("password") || process.env.ADMIN_PASSWORD;
   const name = getArgValue("name") || process.env.ADMIN_NAME || "Vibecraft Admin";
-  const admin = await adminAuthService.createAdminUser({ email, password, name });
+  const role = getArgValue("role") || process.env.ADMIN_ROLE || "owner";
+  const admin = await adminAuthService.createAdminUser({ email, password, name, role });
 
   console.log(
     JSON.stringify(

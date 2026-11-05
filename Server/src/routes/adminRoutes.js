@@ -5,7 +5,10 @@ const productController = require("../controllers/productController");
 const orderController = require("../controllers/orderController");
 const uploadController = require("../controllers/uploadController");
 const testimonialController = require("../controllers/testimonialController");
-const { requireAdmin } = require("../middleware/adminAuth");
+const siteSettingsController = require("../controllers/siteSettingsController");
+const promotionController = require("../controllers/promotionController");
+const auditController = require("../controllers/auditController");
+const { requireAdmin, requireRole } = require("../middleware/adminAuth");
 const { uploadImages, uploadVideo } = require("../middleware/upload");
 
 const router = express.Router();
@@ -14,6 +17,15 @@ router.post("/auth/login", adminAuthController.login);
 router.post("/auth/logout", adminAuthController.logout);
 router.get("/auth/me", requireAdmin, adminAuthController.me);
 router.post("/auth/change-password", requireAdmin, adminAuthController.changePassword);
+router.get("/settings", requireAdmin, requireRole("owner", "admin", "manager"), siteSettingsController.getSettings);
+router.get("/settings/previous", requireAdmin, requireRole("owner", "admin", "manager"), siteSettingsController.getPreviousSettings);
+router.patch("/settings", requireAdmin, requireRole("owner", "admin", "manager"), siteSettingsController.updateSettings);
+router.post("/settings/reset-previous", requireAdmin, requireRole("owner", "admin", "manager"), siteSettingsController.resetPreviousSettings);
+router.get("/promotions", requireAdmin, requireRole("owner", "admin", "manager"), promotionController.listPromotions);
+router.post("/promotions", requireAdmin, requireRole("owner", "admin", "manager"), promotionController.createPromotion);
+router.patch("/promotions/:id", requireAdmin, requireRole("owner", "admin", "manager"), promotionController.updatePromotion);
+router.delete("/promotions/:id", requireAdmin, requireRole("owner", "admin", "manager"), promotionController.deletePromotion);
+router.get("/audit-logs", requireAdmin, requireRole("owner", "admin"), auditController.listRecent);
 
 router.use(requireAdmin);
 
@@ -35,8 +47,8 @@ router.get("/orders", orderController.listOrders);
 router.patch("/orders/:id/status", orderController.updateOrderStatus);
 router.patch("/orders/:id/payment", orderController.updatePaymentVerification);
 
-router.get("/admins", adminAuthController.listAdmins);
-router.post("/admins", adminAuthController.inviteAdmin);
+router.get("/admins", requireRole("owner", "admin"), adminAuthController.listAdmins);
+router.post("/admins", requireRole("owner", "admin"), adminAuthController.inviteAdmin);
 
 router.get("/customers", customerAuthController.listCustomers);
 

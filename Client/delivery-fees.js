@@ -15,15 +15,31 @@
   };
 
   var fees = {};
+  var availability = {};
+  var freeDeliveryMinimum = 0;
   Object.keys(feeBands).forEach(function (amount) {
     feeBands[amount].forEach(function (county) {
       fees[county] = Number(amount);
     });
   });
 
+  if (window.VibecraftApi) {
+    window.VibecraftApi.get("settings").then(function (payload) {
+      var settings = (payload && payload.data) || {};
+      if (settings.deliveryFees) fees = settings.deliveryFees;
+      if (settings.deliveryAvailability) availability = settings.deliveryAvailability;
+      freeDeliveryMinimum = Number(settings.freeDeliveryMinimum || 0);
+      window.dispatchEvent(new Event("vibecraft:delivery-settings"));
+    }).catch(function () {});
+  }
+
   window.VibecraftDelivery = {
     getFee: function (county) {
-      return Object.prototype.hasOwnProperty.call(fees, county) ? fees[county] : 0;
+      return Object.prototype.hasOwnProperty.call(fees, county) && availability[county] !== false ? fees[county] : 0;
     },
+    getAvailableCounties: function () {
+      return Object.keys(fees).filter(function (county) { return availability[county] !== false; });
+    },
+    getFreeDeliveryMinimum: function () { return freeDeliveryMinimum; },
   };
 })();

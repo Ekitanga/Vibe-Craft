@@ -460,9 +460,10 @@
       var qtyPlusButton = document.getElementById("qtyPlus");
       var outOfStock = stock <= 0;
 
-      whatsappButton.href = "https://wa.me/254707472897?text=" + encodeURIComponent(
-        "Hi Vibecraft, I'd like to order or ask about " + product.name + ". Product link: " + window.location.href
-      );
+      var whatsappMessage = "Hi Vibecraft, I'd like to order or ask about " + product.name + ". Product link: " + window.location.href;
+      whatsappButton.href = window.VibecraftContact
+        ? window.VibecraftContact.toWhatsAppUrl(whatsappMessage)
+        : "https://wa.me/254707472897?text=" + encodeURIComponent(whatsappMessage);
       whatsappButton.setAttribute("aria-label", "WhatsApp us about " + product.name);
 
       if (outOfStock) {

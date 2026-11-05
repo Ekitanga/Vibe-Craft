@@ -384,6 +384,7 @@
     window.VibecraftAdmin.renderAccountMenu(admin);
 
     try {
+      await window.VibecraftAdmin.loadSettings();
       await loadCatalog();
     } catch (error) {
       tableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Could not load products.</td></tr>';

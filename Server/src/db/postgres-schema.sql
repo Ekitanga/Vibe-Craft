@@ -133,6 +133,8 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_town TEXT,
   delivery_address TEXT,
   delivery_landmark TEXT,
+  promotion_code TEXT,
+  discount_amount INTEGER NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
   preferred_delivery_date DATE,
   preferred_delivery_time TEXT,
   mpesa_code TEXT,
@@ -188,7 +190,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   password_salt TEXT NOT NULL,
   name TEXT,
   role TEXT NOT NULL DEFAULT 'admin'
-    CHECK (role IN ('admin')),
+    CHECK (role IN ('owner', 'admin', 'manager', 'editor')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -207,6 +209,75 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_admin_user_id ON admin_sessions(admin_user_id);
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_token_hash ON admin_sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at ON admin_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id TEXT PRIMARY KEY,
+  admin_user_id TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT,
+  details JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS site_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  store_name TEXT NOT NULL DEFAULT 'Vibecraft',
+  tagline TEXT NOT NULL DEFAULT 'Big picture energy, made practical.',
+  hero_title TEXT NOT NULL DEFAULT 'See more in every room.',
+  hero_description TEXT NOT NULL DEFAULT 'Thoughtful projector setups for movie nights, big ideas, and shared moments.',
+  phone TEXT NOT NULL DEFAULT '0707 472897',
+  whatsapp TEXT NOT NULL DEFAULT '0707 472897',
+  paybill TEXT NOT NULL DEFAULT '522533',
+  mpesa_account TEXT NOT NULL DEFAULT '8055906',
+  address TEXT NOT NULL DEFAULT 'Rasumal House, 4th floor, Shop 14',
+  opening_hours TEXT NOT NULL DEFAULT 'Monday to Saturday: 8:00 AM – 7:00 PM',
+  announcement TEXT NOT NULL DEFAULT '',
+  primary_color TEXT NOT NULL DEFAULT '#cc3355',
+  accent_color TEXT NOT NULL DEFAULT '#ffd2d5',
+  low_stock_threshold INTEGER NOT NULL DEFAULT 5 CHECK (low_stock_threshold BETWEEN 0 AND 100),
+  delivery_fees JSONB NOT NULL DEFAULT '{}'::jsonb,
+  delivery_availability JSONB NOT NULL DEFAULT '{}'::jsonb,
+  social_links JSONB NOT NULL DEFAULT '{}'::jsonb,
+  free_delivery_minimum INTEGER NOT NULL DEFAULT 0 CHECK (free_delivery_minimum >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO site_settings (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS site_settings_history (
+  id TEXT PRIMARY KEY,
+  settings JSONB NOT NULL,
+  changed_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_settings_history_created_at ON site_settings_history(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS promotions (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  description TEXT,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percent', 'fixed')),
+  discount_value INTEGER NOT NULL CHECK (discount_value > 0),
+  minimum_subtotal INTEGER NOT NULL DEFAULT 0 CHECK (minimum_subtotal >= 0),
+  starts_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  usage_limit INTEGER CHECK (usage_limit IS NULL OR usage_limit > 0),
+  used_count INTEGER NOT NULL DEFAULT 0 CHECK (used_count >= 0),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (discount_type <> 'percent' OR discount_value <= 100),
+  CHECK (expires_at IS NULL OR starts_at IS NULL OR expires_at > starts_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_promotions_code ON promotions(code);
+CREATE INDEX IF NOT EXISTS idx_promotions_active ON promotions(active);
 
 CREATE TABLE IF NOT EXISTS customer_accounts (
   id TEXT PRIMARY KEY,
@@ -283,6 +354,18 @@ EXECUTE FUNCTION set_updated_at();
 DROP TRIGGER IF EXISTS trg_admin_users_updated_at ON admin_users;
 CREATE TRIGGER trg_admin_users_updated_at
 BEFORE UPDATE ON admin_users
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_site_settings_updated_at ON site_settings;
+CREATE TRIGGER trg_site_settings_updated_at
+BEFORE UPDATE ON site_settings
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_promotions_updated_at ON promotions;
+CREATE TRIGGER trg_promotions_updated_at
+BEFORE UPDATE ON promotions
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 

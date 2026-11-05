@@ -2,7 +2,8 @@ const crypto = require("crypto");
 const db = require("../db/postgres");
 const HttpError = require("../utils/httpError");
 const { getProductById } = require("./productService");
-const { getDeliveryFee } = require("../config/deliveryFees");
+const { getConfiguredDeliveryFee, isDeliveryCountyAvailable } = require("./siteSettingsService");
+const { applyPromotion } = require("./promotionService");
 
 const allowedStatuses = ["pending", "confirmed", "processing", "completed", "cancelled"];
 
@@ -22,8 +23,10 @@ const mapOrderRow = (row) => ({
   notes: row.notes || "",
   status: row.status,
   total: Number(row.total || 0),
-  subtotal: Math.max(0, Number(row.total || 0) - Number(row.delivery_fee || 0)),
+  subtotal: Math.max(0, Number(row.total || 0) - Number(row.delivery_fee || 0) + Number(row.discount_amount || 0)),
   deliveryFee: Number(row.delivery_fee || 0),
+  promotionCode: row.promotion_code || null,
+  discountAmount: Number(row.discount_amount || 0),
   currency: row.currency,
   delivery: {
     county: row.delivery_county,
@@ -162,6 +165,8 @@ const listOrders = async () => {
       o.status,
       o.total,
       o.delivery_fee,
+      o.promotion_code,
+      o.discount_amount,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -195,6 +200,8 @@ const listOrdersForAccount = async ({ accountId, email }) => {
       o.status,
       o.total,
       o.delivery_fee,
+      o.promotion_code,
+      o.discount_amount,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -231,6 +238,8 @@ const getOrderById = async (id) => {
       o.status,
       o.total,
       o.delivery_fee,
+      o.promotion_code,
+      o.discount_amount,
       o.currency,
       o.delivery_county,
       o.delivery_town,
@@ -270,11 +279,18 @@ const createOrder = async (payload, customerAccountId) => {
   const customerId = crypto.randomUUID();
   const orderId = crypto.randomUUID();
   const delivery = payload.delivery || {};
-  const deliveryFee = getDeliveryFee(delivery.county);
-  const total = subtotal + deliveryFee;
+  const isPickup = String(payload.notes || "").includes("Pickup requested");
+  if (!isPickup && !(await isDeliveryCountyAvailable(delivery.county))) {
+    throw new HttpError(400, "We do not currently deliver to that county.");
+  }
+  const deliveryFee = await getConfiguredDeliveryFee(delivery.county, subtotal);
+  let total = subtotal + deliveryFee;
+  let promotion = { code: null, discountAmount: 0 };
   const location = payload.customer.location || [delivery.town, delivery.county].filter(Boolean).join(", ");
 
   await db.withTransaction(async (client) => {
+    promotion = await applyPromotion(client, payload.promotionCode, subtotal);
+    total = Math.max(0, subtotal + deliveryFee - promotion.discountAmount);
     await client.query(
       `INSERT INTO customers (id, name, phone, email, location)
        VALUES ($1, $2, $3, $4, $5)`,
@@ -283,11 +299,11 @@ const createOrder = async (payload, customerAccountId) => {
 
     await client.query(
       `INSERT INTO orders (
-        id, customer_id, customer_account_id, notes, status, total, currency, delivery_fee,
+        id, customer_id, customer_account_id, notes, status, total, currency, delivery_fee, promotion_code, discount_amount,
         delivery_county, delivery_town, delivery_address, delivery_landmark,
         preferred_delivery_date, preferred_delivery_time, mpesa_code
       )
-       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12, $13)`,
+       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         orderId,
         customerId,
@@ -295,6 +311,8 @@ const createOrder = async (payload, customerAccountId) => {
         payload.notes || "",
         total,
         deliveryFee,
+        promotion.code,
+        promotion.discountAmount,
         delivery.county,
         delivery.town,
         delivery.address,

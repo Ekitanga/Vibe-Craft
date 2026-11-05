@@ -2,11 +2,11 @@
   "use strict";
 
   function currentPage() {
-    return window.location.pathname.split("/").pop() || "admin-dashboard.html";
+    return window.location.pathname === "/" ? "/admin" : window.location.pathname;
   }
 
   function loginUrl() {
-    return "login.html?next=" + encodeURIComponent(currentPage());
+    return "/login?next=" + encodeURIComponent(currentPage());
   }
 
   async function requireSession() {
@@ -29,7 +29,7 @@
       try {
         await window.VibecraftApi.post("admin/auth/logout");
       } finally {
-        window.location.href = "login.html";
+      window.location.href = "/login";
       }
     });
   }
@@ -48,6 +48,14 @@
     if (avatar) avatar.textContent = initial;
     if (menuName) menuName.textContent = name;
     if (menuEmail) menuEmail.textContent = admin.email || "";
+
+    var canManageSettings = ["owner", "admin", "manager"].indexOf(admin.role) !== -1;
+    var canManageTeam = ["owner", "admin"].indexOf(admin.role) !== -1;
+    document.querySelectorAll(".admin-nav a").forEach(function (link) {
+      var href = link.getAttribute("href") || "";
+      if (href === "/admin-settings" || href === "/admin-promotions" || href === "admin-settings.html" || href === "admin-promotions.html") link.hidden = !canManageSettings;
+      if (href === "/admin-team" || href === "admin-team.html") link.hidden = !canManageTeam;
+    });
 
     function setOpen(isOpen) {
       toggle.setAttribute("aria-expanded", String(isOpen));
@@ -79,7 +87,55 @@
     });
   }
 
+  function wireAdminNavigation() {
+    var nav = document.querySelector(".admin-nav");
+    var header = document.querySelector(".site-header");
+    if (!nav || !header || document.getElementById("adminMenuToggle")) return;
+
+    nav.id = "adminNav";
+    var toggle = document.createElement("button");
+    toggle.id = "adminMenuToggle";
+    toggle.className = "admin-menu-toggle";
+    toggle.type = "button";
+    toggle.setAttribute("aria-label", "Open admin navigation");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", "adminNav");
+    toggle.innerHTML = '<span></span><span></span><span></span>';
+    header.insertBefore(toggle, nav);
+
+    function setOpen(isOpen) {
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Close admin navigation" : "Open admin navigation");
+      nav.classList.toggle("is-open", isOpen);
+    }
+
+    toggle.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+    });
+
+    nav.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () { setOpen(false); });
+    });
+
+    document.addEventListener("click", function (event) {
+      if (toggle.getAttribute("aria-expanded") === "true" && !nav.contains(event.target) && event.target !== toggle) setOpen(false);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") setOpen(false);
+    });
+  }
+
   var LOW_STOCK_THRESHOLD = 5;
+
+  function loadSettings() {
+    return window.VibecraftApi.get("settings").then(function (payload) {
+      var threshold = Number(payload && payload.data && payload.data.lowStockThreshold);
+      if (Number.isInteger(threshold) && threshold >= 0) LOW_STOCK_THRESHOLD = threshold;
+      return payload && payload.data;
+    });
+  }
 
   function stockStatus(stock) {
     var value = Number(stock || 0);
@@ -115,10 +171,12 @@
     renderAccountMenu: renderAccountMenu,
     markActiveNav: markActiveNav,
     escapeHtml: escapeHtml,
+    loadSettings: loadSettings,
     lowStockThreshold: LOW_STOCK_THRESHOLD,
     stockStatus: stockStatus,
     stockBadge: stockBadge,
   };
 
+  wireAdminNavigation();
   markActiveNav();
 })();

@@ -22,6 +22,8 @@
         <a href="admin-customers.html">Customers</a>
         <a href="admin-testimonials.html">Testimonials</a>
         <a href="admin-team.html">Team</a>
+        <a href="admin-settings.html">Settings</a>
+        <a href="admin-promotions.html">Promotions</a>
       </nav>
       <div class="admin-account">
         <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu">
@@ -88,6 +90,15 @@
                 <input id="adminPassword" type="password" required minlength="8" />
                 <small>At least 8 characters. Share it with them privately — they can change it once they're in.</small>
               </div>
+              <div class="field">
+                <label for="adminRole">Role</label>
+                <select id="adminRole">
+                  <option value="editor">Editor — products and content</option>
+                  <option value="manager">Manager — store operations</option>
+                  <option value="admin">Admin — full access</option>
+                  <option value="owner">Owner — team and security</option>
+                </select>
+              </div>
             </div>
             <button class="button button-dark auth-submit" type="submit">Add admin</button>
             <p class="form-status" id="adminInviteStatus" role="status"></p>
@@ -105,12 +116,22 @@
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Role</th>
                   <th>Added</th>
                 </tr>
               </thead>
               <tbody id="adminsTableBody">
                 <tr class="empty-row"><td colspan="3"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading…</span></span></td></tr>
               </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading"><div><h2>Recent activity</h2><p class="panel-copy">A record of important admin changes.</p></div></div>
+          <div class="admin-table-wrap">
+            <table class="admin-table"><thead><tr><th>Admin</th><th>Action</th><th>Details</th><th>Date</th></tr></thead>
+              <tbody id="auditTableBody"><tr class="empty-row"><td colspan="4"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading...</span></span></td></tr></tbody>
             </table>
           </div>
         </section>

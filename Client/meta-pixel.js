@@ -15,7 +15,7 @@ document.addEventListener("click", function (event) {
 
   var eventName = target.getAttribute("data-meta-event");
   var custom = target.getAttribute("data-meta-custom") === "true";
-  if (!eventName && target.matches('a[href*="find-your-setup.html"]')) {
+  if (!eventName && target.matches('a[href*="find-your-setup"], a[href*="find-your-setup.html"]')) {
     eventName = "SetupFinderClick";
     custom = true;
   }

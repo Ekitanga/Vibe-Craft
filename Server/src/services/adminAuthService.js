@@ -21,11 +21,13 @@ const toAdmin = (row) => ({
   updatedAt: row.updated_at,
 });
 
+const allowedRoles = ["owner", "admin", "manager", "editor"];
+
 const cleanupExpiredSessions = async () => {
   await db.query("DELETE FROM admin_sessions WHERE expires_at <= NOW()");
 };
 
-const createAdminUser = async ({ email, password, name }) => {
+const createAdminUser = async ({ email, password, name, role = "admin" }) => {
   const normalizedEmail = normalizeEmail(email);
 
   if (!validateEmail(normalizedEmail)) {
@@ -36,18 +38,23 @@ const createAdminUser = async ({ email, password, name }) => {
     throw new HttpError(400, "Admin password must be at least 8 characters.");
   }
 
+  if (!allowedRoles.includes(role)) {
+    throw new HttpError(400, "Invalid admin role.");
+  }
+
   const credentials = hashPassword(password);
   const id = `admin_${crypto.randomUUID()}`;
   const result = await db.query(
-    `INSERT INTO admin_users (id, email, password_hash, password_salt, name)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO admin_users (id, email, password_hash, password_salt, name, role)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT(email) DO UPDATE SET
        password_hash = EXCLUDED.password_hash,
        password_salt = EXCLUDED.password_salt,
        name = COALESCE(EXCLUDED.name, admin_users.name),
+       role = EXCLUDED.role,
        updated_at = NOW()
      RETURNING id, email, name, role, created_at, updated_at`,
-    [id, normalizedEmail, credentials.hash, credentials.salt, String(name || "").trim() || null]
+    [id, normalizedEmail, credentials.hash, credentials.salt, String(name || "").trim() || null, role]
   );
 
   return toAdmin(result.rows[0]);
@@ -61,7 +68,7 @@ const listAdminUsers = async () => {
   return result.rows.map(toAdmin);
 };
 
-const inviteAdminUser = async ({ email, password, name }) => {
+const inviteAdminUser = async ({ email, password, name, role }) => {
   const normalizedEmail = normalizeEmail(email);
   const existing = await db.query("SELECT id FROM admin_users WHERE email = $1", [normalizedEmail]);
 
@@ -69,7 +76,7 @@ const inviteAdminUser = async ({ email, password, name }) => {
     throw new HttpError(409, "An admin with that email already exists.");
   }
 
-  return createAdminUser({ email, password, name });
+  return createAdminUser({ email, password, name, role });
 };
 
 const authenticateAdmin = async ({ email, password }) => {

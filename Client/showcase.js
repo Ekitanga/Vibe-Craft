@@ -154,7 +154,7 @@
   function whatsappUrl(product) {
     var productUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
     var message = "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + productUrl;
-    return "https://wa.me/254707472897?text=" + encodeURIComponent(message);
+    return window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(message) : "https://wa.me/254707472897?text=" + encodeURIComponent(message);
   }
 
   function isProjectorProduct(product) {

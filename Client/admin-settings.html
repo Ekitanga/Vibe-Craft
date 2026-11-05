@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Vibecraft admin settings." />
+    <title>Vibecraft — Settings</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="style.css?v=admin-settings-delivery-3" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="admin-products.html">Products</a>
+        <a href="admin-orders.html">Orders</a>
+        <a href="admin-customers.html">Customers</a>
+        <a href="admin-testimonials.html">Testimonials</a>
+        <a href="admin-team.html">Team</a>
+        <a href="admin-settings.html">Settings</a>
+        <a href="admin-promotions.html">Promotions</a>
+      </nav>
+      <div class="admin-account">
+        <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu"><span class="admin-account-avatar" id="adminAccountAvatar">A</span><span class="admin-account-caret">▾</span></button>
+        <div class="admin-account-menu" id="adminAccountMenu" role="menu" hidden>
+          <div class="admin-account-info"><strong id="adminAccountMenuName">Admin</strong><span id="adminAccountEmail"></span></div>
+          <a class="admin-account-item" href="index.html" role="menuitem">View store</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="adminSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="admin-shell">
+        <div class="admin-topbar">
+          <div><p class="eyebrow">Admin</p><h1>Settings</h1></div>
+          <p class="admin-topbar-note">Update the store from here. No code spelunking required. 🛠️</p>
+        </div>
+
+        <form id="settingsForm" novalidate>
+          <section class="admin-panel">
+            <div class="admin-panel-heading"><div><h2>Store identity</h2><p class="panel-copy">These details appear across the storefront.</p></div></div>
+            <div class="form-grid">
+              <div class="field"><label for="storeName">Store name</label><input id="storeName" name="storeName" required /></div>
+              <div class="field"><label for="tagline">Tagline</label><input id="tagline" name="tagline" required /></div>
+              <div class="field"><label for="heroTitle">Homepage headline</label><input id="heroTitle" name="heroTitle" required /></div>
+              <div class="field"><label for="heroDescription">Homepage description</label><textarea id="heroDescription" name="heroDescription" required></textarea></div>
+              <div class="field"><label for="announcement">Announcement <small>(optional)</small></label><input id="announcement" name="announcement" placeholder="e.g. Free delivery this weekend" /></div>
+            </div>
+          </section>
+
+          <section class="admin-panel">
+            <div class="admin-panel-heading"><div><h2>Contact & payments</h2><p class="panel-copy">Keep customer-facing details current.</p></div></div>
+            <div class="form-grid">
+              <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" required /></div>
+              <div class="field"><label for="whatsapp">WhatsApp</label><input id="whatsapp" name="whatsapp" required /></div>
+              <div class="field"><label for="paybill">M-Pesa paybill</label><input id="paybill" name="paybill" required /></div>
+              <div class="field"><label for="mpesaAccount">M-Pesa account</label><input id="mpesaAccount" name="mpesaAccount" required /></div>
+              <div class="field"><label for="address">Store address</label><textarea id="address" name="address" required></textarea></div>
+              <div class="field"><label for="openingHours">Opening hours</label><textarea id="openingHours" name="openingHours" required></textarea></div>
+              <div class="field"><label for="freeDeliveryMinimum">Free delivery minimum <small>(0 disables it)</small></label><input id="freeDeliveryMinimum" name="freeDeliveryMinimum" type="number" min="0" step="1" required /></div>
+              <div class="field field-wide">
+                <label>Delivery counties</label>
+                <div class="delivery-county-manager">
+                  <div class="delivery-county-controls">
+                    <button class="delivery-county-trigger" id="deliveryCountyTrigger" type="button" aria-expanded="false" aria-controls="deliveryCountyMenu">
+                      <span id="deliveryCountyTriggerLabel">Choose a county</span><span class="delivery-county-chevron" aria-hidden="true">⌄</span>
+                    </button>
+                    <select id="deliveryCountySelect" aria-label="Choose a county" hidden>
+                      <option value="">Choose a county</option>
+                    </select>
+                    <div class="delivery-county-menu" id="deliveryCountyMenu" role="listbox" hidden></div>
+                    <div class="delivery-fee-input-wrap"><span>KES</span><input id="deliveryCountyFee" aria-label="Delivery fee" type="number" min="0" max="100000" step="1" value="0" /></div>
+                    <label class="delivery-toggle"><input id="deliveryCountyEnabled" type="checkbox" checked /><span>Available</span></label>
+                    <button class="button button-outline" id="saveDeliveryCounty" type="button">Add county</button>
+                    <button class="button button-outline delivery-remove-selected" id="removeDeliveryCounty" type="button" disabled>Remove selected</button>
+                  </div>
+                </div>
+                <div class="delivery-fees-actions">
+                  <small>Choose a county to add or update it. Disabled counties stay saved for later.</small>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="admin-panel">
+            <div class="admin-panel-heading"><div><h2>Social links</h2><p class="panel-copy">These links appear in the storefront footer. Leave one blank to hide it.</p></div></div>
+            <div class="form-grid">
+              <div class="field"><label for="socialInstagram">Instagram</label><input id="socialInstagram" type="url" placeholder="https://instagram.com/your-store" /></div>
+              <div class="field"><label for="socialTiktok">TikTok</label><input id="socialTiktok" type="url" placeholder="https://tiktok.com/@your-store" /></div>
+              <div class="field"><label for="socialFacebook">Facebook</label><input id="socialFacebook" type="url" placeholder="https://facebook.com/your-store" /></div>
+              <div class="field"><label for="socialYoutube">YouTube</label><input id="socialYoutube" type="url" placeholder="https://youtube.com/@your-store" /></div>
+            </div>
+          </section>
+
+          <section class="admin-panel">
+            <div class="admin-panel-heading"><div><h2>Look & operations</h2><p class="panel-copy">A little control over the vibe, plus the stock warning level.</p></div></div>
+            <div class="form-grid">
+              <div class="field"><label for="primaryColor">Primary colour</label><input id="primaryColor" name="primaryColor" type="color" /></div>
+              <div class="field"><label for="accentColor">Accent colour</label><input id="accentColor" name="accentColor" type="color" /></div>
+              <div class="field"><label for="lowStockThreshold">Low-stock threshold</label><input id="lowStockThreshold" name="lowStockThreshold" type="number" min="0" max="100" step="1" required /><small>Products at or below this number show as low stock.</small></div>
+            </div>
+          </section>
+
+          <div class="settings-actions">
+            <button class="button button-dark auth-submit" id="saveSettings" type="submit">Save settings <span>↗</span></button>
+            <button class="button button-outline auth-submit" id="resetSettings" type="button" disabled>Reset previous</button>
+          </div>
+          <p class="form-status" id="settingsStatus" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js?v=admin-no-theme-1"></script>
+    <script src="admin.js"></script>
+    <script src="admin-settings.js?v=delivery-fees-dropdown-3"></script>
+  </body>
+</html>

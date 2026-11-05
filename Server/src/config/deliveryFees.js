@@ -19,4 +19,4 @@ const deliveryFees = Object.entries(feeBands).reduce((result, [amount, counties]
 
 const getDeliveryFee = (county) => deliveryFees[county] || 0;
 
-module.exports = { getDeliveryFee };
+module.exports = { feeBands, deliveryFees, getDeliveryFee };

@@ -265,6 +265,10 @@ const initializePostgres = async () => {
 
   await db.query(schema);
   await db.query("ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS profile_image_url TEXT");
+  await db.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS promotion_code TEXT, ADD COLUMN IF NOT EXISTS discount_amount INTEGER NOT NULL DEFAULT 0");
+  await db.query("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS delivery_fees JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS delivery_availability JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS social_links JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS free_delivery_minimum INTEGER NOT NULL DEFAULT 0");
+  await db.query("ALTER TABLE admin_users DROP CONSTRAINT IF EXISTS admin_users_role_check");
+  await db.query("ALTER TABLE admin_users ADD CONSTRAINT admin_users_role_check CHECK (role IN ('owner', 'admin', 'manager', 'editor'))");
   await db.query(`ALTER TABLE orders
     ADD COLUMN IF NOT EXISTS delivery_county TEXT,
     ADD COLUMN IF NOT EXISTS delivery_town TEXT,
@@ -281,6 +285,8 @@ const initializePostgres = async () => {
       await client.query(
         `TRUNCATE
           admin_sessions,
+          admin_audit_logs,
+          promotions,
           admin_users,
           customer_sessions,
           customer_accounts,
@@ -313,6 +319,7 @@ const initializePostgres = async () => {
     productSpecs: await countRows("product_specs"),
     productReviews: await countRows("product_reviews"),
     orders: await countRows("orders"),
+    promotions: await countRows("promotions"),
   };
 
   console.log(JSON.stringify(summary, null, 2));
