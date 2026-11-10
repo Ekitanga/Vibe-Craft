@@ -1,9 +1,9 @@
 const express = require("express");
 const aiController = require("../controllers/aiController");
-const { aiRateLimit } = require("../middleware/aiRateLimit");
+const { aiLimit } = require("../middleware/abuseLimits");
 
 const router = express.Router();
 
-router.post("/chat", aiRateLimit, aiController.chat);
+router.post("/chat", aiLimit, aiController.chat);
 
 module.exports = router;

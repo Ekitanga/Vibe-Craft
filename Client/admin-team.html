@@ -11,6 +11,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+    <link rel="stylesheet" href="admin-extras.css?v=1" />
   </head>
   <body>
     <header class="site-header">
@@ -51,6 +52,7 @@
           <div class="admin-panel-heading">
             <h2>Change your password</h2>
           </div>
+          <p class="admin-notice is-warning" id="passwordChangeNotice" hidden>Your current password doesn't meet the security rules. Choose a new one to continue using the admin area.</p>
 
           <form id="adminChangePasswordForm" novalidate>
             <div class="form-grid">
@@ -69,12 +71,12 @@
           </form>
         </section>
 
-        <section class="admin-panel">
+        <section class="admin-panel" id="inviteSection">
           <div class="admin-panel-heading">
             <h2>Add an admin</h2>
           </div>
 
-          <form id="adminInviteForm" novalidate>
+          <form id="adminInviteForm" novalidate data-requires="team.manage">
             <div class="form-grid">
               <div class="field">
                 <label for="adminName">Name</label>
@@ -97,6 +99,7 @@
                   <option value="admin">Admin — full access</option>
                   <option value="owner">Owner — team and security</option>
                 </select>
+                <small>Only roles ranked below yours are listed. Edit what each role can do on the Access page.</small>
               </div>
             </div>
             <button class="button button-dark auth-submit" type="submit">Add admin</button>
@@ -116,7 +119,9 @@
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th>Added</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="adminsTableBody">
@@ -139,7 +144,7 @@
 
     <script src="api.js"></script>
     <script src="app.js?v=admin-no-theme-1"></script>
-    <script src="admin.js"></script>
-    <script src="admin-team.js"></script>
+    <script src="admin.js?v=sec-meta-1"></script>
+    <script src="admin-team.js?v=rbac-1"></script>
   </body>
 </html>

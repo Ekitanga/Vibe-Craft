@@ -1,7 +1,11 @@
 const { Pool } = require("pg");
 const env = require("../config/env");
 
-const sslConfig = env.pgSsl ? { rejectUnauthorized: false } : false;
+// PGSSL_REJECT_UNAUTHORIZED=true (optionally with PGSSL_CA) verifies the database
+// certificate. It stays opt-in so existing deployments keep connecting.
+const sslConfig = env.pgSsl
+  ? { rejectUnauthorized: env.pgSslRejectUnauthorized, ...(env.pgSslCa ? { ca: env.pgSslCa } : {}) }
+  : false;
 
 const cleanConnectionString = (connectionString) => {
   if (!connectionString) {
@@ -49,7 +53,7 @@ const withTransaction = async (callback) => {
 
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    await client.query("ROLLBACK").catch(() => {});
     throw error;
   } finally {
     client.release();

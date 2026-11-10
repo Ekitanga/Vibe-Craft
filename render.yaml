@@ -4,7 +4,8 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install --prefix Server
-    startCommand: npm run db:pg:migrate-admin-controls && npm start
+    # Database migrations run automatically on startup (Server/src/db/migrate.js).
+    startCommand: npm start
     healthCheckPath: /api/health
     initialDeployHook: npm run db:pg:init
     envVars:
@@ -14,7 +15,13 @@ services:
         value: "true"
       - key: DATABASE_URL
         sync: false
+      # Comma-separated. First entry = the public site, e.g. https://vibecraft254.com
       - key: CLIENT_ORIGIN
+        sync: false
+      # Encrypts integration secrets (Meta tokens, M-Pesa keys, SMTP password) at rest.
+      # Generate once with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+      # Keep it safe: if it is lost, saved secrets must be re-entered in Admin → Integrations.
+      - key: SETTINGS_ENCRYPTION_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
@@ -28,3 +35,5 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+    # Do NOT set ADMIN_PASSWORD here. Admins are managed in Admin → Team; the first owner
+    # of an empty database is created with `npm run admin:create`.

@@ -6,20 +6,39 @@ const path = require("path");
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 dotenv.config({ path: path.join(__dirname, "../.env"), override: false });
 
+const list = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+const nodeEnv = process.env.NODE_ENV || "development";
+
 const env = {
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
+  isProduction: nodeEnv === "production",
+  isTest: nodeEnv === "test",
   port: Number(process.env.PORT) || 5000,
-  clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+  // Comma-separated list. The first entry is treated as the canonical public origin.
+  clientOrigins: list(process.env.CLIENT_ORIGIN || "http://localhost:5173"),
+  get clientOrigin() {
+    return this.clientOrigins[0] || "";
+  },
   dbPath: process.env.DATABASE_PATH || path.join(__dirname, "../../data/vibecraft.sqlite"),
   databaseUrl: process.env.DATABASE_URL || "",
   pgHost: process.env.PGHOST || "localhost",
   pgPort: Number(process.env.PGPORT) || 5432,
   pgDatabase: process.env.PGDATABASE || process.env.DB_NAME || "VibesCraft",
   pgUser: process.env.PGUSER || "postgres",
-  pgPassword: process.env.PGPASSWORD || "password",
+  pgPassword: process.env.PGPASSWORD || "",
   pgSsl: process.env.PGSSL === "true",
+  // Set to "true" once the database certificate chain is trusted (or PGSSL_CA is provided).
+  pgSslRejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED === "true",
+  pgSslCa: process.env.PGSSL_CA ? process.env.PGSSL_CA.replace(/\\n/g, "\n") : "",
   adminSessionDays: Number(process.env.ADMIN_SESSION_DAYS) || 7,
   customerSessionDays: Number(process.env.CUSTOMER_SESSION_DAYS) || 30,
+  // Only used to create the very first owner account when the database has no admins.
+  // It never overwrites an existing account's password or role.
   adminEmail: process.env.ADMIN_EMAIL || "",
   adminPassword: process.env.ADMIN_PASSWORD || "",
   adminName: process.env.ADMIN_NAME || "Vibecraft Admin",
@@ -31,6 +50,10 @@ const env = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  // Key used to encrypt integration secrets (Meta tokens, M-Pesa keys, SMTP password) at rest.
+  settingsEncryptionKey: process.env.SETTINGS_ENCRYPTION_KEY || "",
+  // Background jobs (pending-order expiry, M-Pesa reconciliation). Disabled automatically in tests.
+  backgroundJobs: process.env.BACKGROUND_JOBS !== "false" && nodeEnv !== "test",
 };
 
 module.exports = env;

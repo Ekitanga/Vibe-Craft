@@ -239,7 +239,12 @@ const validateProductPayload = async (payload, options = {}) => {
   }
 };
 
-const mergeProductPayload = (product, payload) => {
+// Fields a request may never set directly (identity and bookkeeping).
+const PROTECTED_FIELDS = ["id", "createdAt", "updatedAt"];
+
+const mergeProductPayload = (product, rawPayload) => {
+  const payload = { ...rawPayload };
+  PROTECTED_FIELDS.forEach((field) => delete payload[field]);
   const merged = {
     ...product,
     ...payload,
@@ -377,7 +382,7 @@ const replaceProductChildren = async (client, product) => {
       [
         crypto.randomUUID(),
         product.id,
-        review.name || "Verified customer",
+        String(review.name || "Customer").slice(0, 80),
         Math.max(1, Math.min(5, Number(review.rating || 5))),
         review.title || null,
         review.body || null,

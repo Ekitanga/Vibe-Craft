@@ -215,7 +215,7 @@
       '<div class="cart-line">',
       '<div class="cart-line-media">' + (image ? '<img src="' + image + '" alt="" />' : "") + "</div>",
       '<div class="cart-line-body">',
-      "<h4>" + product.name + "</h4>",
+      "<h4>" + escapeHtml(product.name) + "</h4>",
       "<span>" + formatPrice(product.price, product.currency) + "</span>",
       '<div class="cart-line-controls">',
       '<div class="cart-qty">',
@@ -352,9 +352,12 @@
           : notesValue || undefined,
         mpesaCode: document.getElementById("checkoutMpesaCode").value.trim() || undefined,
         promotionCode: appliedPromotion ? appliedPromotion.promotion.code : undefined,
+        fulfillment: isPickup ? "pickup" : "delivery",
+        attribution: window.VibecraftMeta ? window.VibecraftMeta.getAttribution() : undefined,
       });
 
       var order = response && response.data ? response.data : {};
+      if (window.VibecraftMeta) window.VibecraftMeta.trackPurchase(order);
       try {
         window.sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
       } catch (_error) {
@@ -441,6 +444,16 @@
       products = (payload && payload.data) || [];
       render();
       var cartItems = window.VibecraftCart.getItems();
+      if (cartItems.length && window.VibecraftMeta) {
+        window.VibecraftMeta.track("InitiateCheckout", {
+          content_type: "product",
+          content_ids: cartItems.map(function (item) { return item.productId; }),
+          contents: cartItems.map(function (item) { return { id: item.productId, quantity: item.quantity }; }),
+          num_items: cartItems.reduce(function (sum, item) { return sum + item.quantity; }, 0),
+          value: computeSubtotal(cartItems),
+          currency: "KES",
+        });
+      }
       if (customerAccount) {
         restoreLastReceipt();
         prefillFromAccount();

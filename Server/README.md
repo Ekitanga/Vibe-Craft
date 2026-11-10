@@ -1,109 +1,107 @@
 # Vibecraft Server
 
-Express backend for the Vibecraft projector shop. Product, order, inquiry, and admin data are backed by PostgreSQL.
-
-The server also serves the plain HTML/CSS/JavaScript client from `../Client`, so the whole app runs from one local URL.
-
-Product and customer profile images are stored in Cloudinary. Set the three `CLOUDINARY_*` variables from `.env.example` before using image uploads.
+Express + PostgreSQL backend for the Vibecraft projector shop. It also serves the
+plain HTML/CSS/JS storefront and admin from `../Client`, so the whole app runs from
+one URL.
 
 ## Getting started
 
 ```bash
-npm install
-cd ..
-npm start
+cp Server/.env.example Server/.env   # fill in the database connection
+npm install                          # from the project root
+npm run db:pg:init                   # create tables (migrations) and seed the catalog
+npm run admin:create -- --email you@example.com --password "a-long-unique-password" --name "Your Name"
+npm start                            # http://localhost:5000
 ```
 
-For local backend-only work, you can still run `npm run dev` inside `Server/`.
+`npm run dev` inside `Server/` restarts on file changes.
 
-The app runs on `http://localhost:5000` by default. API routes are under `http://localhost:5000/api`.
+## Database & migrations
 
-## Database
+The schema is managed by numbered migrations in `src/db/migrations/`. They run
+automatically when the server starts (and via `npm run db:migrate`), each once, inside a
+transaction, recorded in `schema_migrations`. To change the schema, add a new
+`NNN-description.js` file exporting `up(client)`; never edit a migration that has
+already run in production.
 
-The API services connect to PostgreSQL. By default the database name is `VibesCraft`.
+`db:pg:init` runs the migrations and seeds the demo catalog; `db:pg:reset` wipes and
+reseeds (destructive).
 
-Create `Server/.env` from `Server/.env.example` and set the Postgres credentials for your machine or hosted database.
+## Admins, roles and permissions
 
-Example local `.env`:
+* Admin accounts are managed in **Admin → Team**. Roles and what they can do are
+  managed in **Admin → Access**. Built-in roles: Owner, Admin, Manager, Editor; owners
+  can create custom roles (e.g. “Support”).
+* Every admin API route checks a permission (`src/config/permissions.js`,
+  `src/routes/adminRoutes.js`). Roles are ranked: nobody can grant a role or a
+  permission above their own, and the last active owner cannot be removed or demoted.
+* `ADMIN_EMAIL`/`ADMIN_PASSWORD` only create the first owner on an **empty** database.
+  They never overwrite an existing account. Remove them after first use.
+* `npm run admin:create -- --email … --password … --reset` is the break-glass reset for a
+  locked-out owner (requires server/shell access).
+* An admin whose password fails the current rules (e.g. `password`) is forced to change
+  it before using the admin area.
+
+## Integrations (no code changes needed)
+
+**Admin → Integrations** configures, from schema definitions in
+`src/services/integrationSettingsService.js`:
+
+| Section | What it does |
+| --- | --- |
+| Website | Public base URL used for feeds, callbacks and share previews |
+| Meta | Pixel, Conversions API, catalog feed, domain verification, Lead Ads, ad-spend reporting |
+| M-Pesa (Daraja) | STK Push payment prompts, automatic payment confirmation |
+| Email (SMTP) | Order confirmations, new-order alerts, email verification |
+| Security | Login lockout, order/promo/AI/tracking rate limits, unpaid-order expiry, CSP mode, allowed origins |
+| Share previews | Open Graph tags, sitemap, robots |
+| Cookie consent | Optional consent banner (off by default) |
+| Policies | Privacy policy, terms, refunds at `/privacy`, `/terms`, `/refunds` |
+
+Secret fields are encrypted with AES-256-GCM (`src/utils/secretBox.js`) and never sent
+back to the browser. Set `SETTINGS_ENCRYPTION_KEY` in production; without it, a key
+stored in the database is used and the admin UI shows a warning.
+
+See `docs/meta-ads-setup.md` for the step-by-step Meta setup.
+
+## Security model (summary)
+
+* Sessions: random 256-bit tokens, stored hashed, HTTP-only + SameSite=Lax + Secure cookies.
+* Passwords: scrypt (async), minimum length and common-password checks; changing a
+  password signs out other devices.
+* Brute force: per-account and per-IP sign-in lockout (`src/services/loginGuard.js`).
+* CSRF: state-changing `/api` requests from foreign origins are refused
+  (`src/middleware/security.js`); CORS only allows configured origins.
+* CSP with per-request nonces on every `<script>` (`src/services/pageRenderer.js`),
+  HSTS, nosniff, frame-ancestors none.
+* Abuse: rate limits on orders, sign-ups, promo checks, AI chat and tracking; a cap on
+  unconfirmed orders per phone; unpaid unconfirmed orders auto-cancel and restock.
+* Customer accounts must verify their email (link or Google) before guest orders with
+  that email appear in their history; Google sign-in evicts unverified squatters.
+* Errors: unexpected errors are logged server-side; clients get a generic message.
+
+## Tests
 
 ```bash
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=VibesCraft
-PGUSER=postgres
-PGPASSWORD=your_postgres_password
-PGSSL=false
+# Uses a DISPOSABLE database: it is wiped on every run.
+TEST_DATABASE_URL=postgres://postgres@localhost:5432/vibecraft_test npm test --prefix Server
+npm run check --prefix Server        # syntax check of all server + client JS
 ```
 
-Create the tables and seed the catalog:
+CI (`.github/workflows/ci.yml`) runs the syntax check, `npm audit` and the tests against
+PostgreSQL on every push and pull request.
 
-```bash
-npm run db:pg:init
-```
+## Main routes
 
-`db:pg:reset` clears and reseeds the Postgres tables. If you reset the database, recreate the admin account afterward.
+Public: `GET /api/products`, `GET /api/products/:id`, `GET /api/categories`,
+`GET /api/settings`, `GET /api/testimonials`, `POST /api/orders`,
+`POST /api/promotions/validate`, `POST /api/ai/chat`, `POST /api/marketing/events`,
+`/api/auth/*` (signup, login, Google, verify-email, profile), `GET /feeds/meta-catalog.xml|csv`,
+`/sitemap.xml`, `/robots.txt`, `/privacy`, `/terms`, `/refunds`.
 
-Tables created include:
+Webhooks: `GET|POST /api/webhooks/meta` (Lead Ads, signed),
+`POST /api/payments/mpesa/callback/:secret` (Daraja).
 
-- `categories`
-- `products`
-- `product_images`
-- `product_specs`
-- `product_box_items`
-- `product_use_cases`
-- `product_reviews`
-- `customers`
-- `orders`
-- `order_items`
-- `inquiry_answers`
-- `order_recommendations`
-- `admin_users`
-- `admin_sessions`
-- `customer_accounts`
-- `customer_sessions`
-
-The SQLite schema remains in `src/db/schema.sql` for local fallback/reference, but the active services use Postgres.
-
-## Admin Login
-
-Create or reset the admin account from the project root:
-
-```bash
-npm run admin:create -- --email owner@example.com --password "choose-a-strong-password" --name "Vibecraft Admin"
-```
-
-Then open `/login.html?next=admin-dashboard.html` and sign in with that email and password. Admin sessions use an HTTP-only cookie from the shared login flow.
-
-Admin pages:
-
-- `/admin-dashboard.html` - Dashboard and daily queue.
-- `/admin.html` - Product catalog manager.
-- `/admin-orders.html` - Orders and inquiry follow-up.
-
-## Routes
-
-- `GET /api/health` - API status.
-- `GET /api/products` - List products, with optional `category`, `search`, `featured`, and `inStock` filters.
-- `GET /api/products/:id` - Get one product.
-- `GET /api/categories` - List categories.
-- `POST /api/orders` - Create a customer order or inquiry.
-- `POST /api/auth/signup` - Create a customer account.
-- `POST /api/auth/login` - Shared customer/admin email/password sign in.
-- `GET /api/auth/me` - Current signed-in customer.
-- `POST /api/auth/me/avatar` - Upload the signed-in customer's profile image.
-- `POST /api/auth/logout` - End the current customer/admin session.
-- `POST /api/admin/auth/login` - Direct admin email/password sign in endpoint.
-- `GET /api/admin/auth/me` - Current signed-in admin.
-- `POST /api/admin/auth/logout` - End the current admin session.
-- `GET /api/admin/products` - Admin product list.
-- `POST /api/admin/products` - Create a product.
-- `PATCH /api/admin/products/:id` - Update a product.
-- `DELETE /api/admin/products/:id` - Delete a product.
-- `POST /api/admin/uploads` - Upload product images for the signed-in admin.
-- `GET /api/admin/orders` - Admin order list.
-- `PATCH /api/admin/orders/:id/status` - Update order status.
-
-## Next backend steps
-
-- Add Google admin sign-in.
-- Add payment or WhatsApp inquiry integration.
+Admin (`/api/admin/*`, permission-checked): products, uploads, testimonials,
+promotions, orders (+ `/:id/mpesa-request`), customers, settings, integrations,
+marketing (overview, leads, events), admins, roles, audit logs.

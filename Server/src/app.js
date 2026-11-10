@@ -1,6 +1,5 @@
 const express = require("express");
 const path = require("path");
-const cors = require("cors");
 const morgan = require("morgan");
 const env = require("./config/env");
 const healthRoutes = require("./routes/healthRoutes");
@@ -13,27 +12,46 @@ const aiRoutes = require("./routes/aiRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
+const marketingRoutes = require("./routes/marketingRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
+const marketingController = require("./controllers/marketingController");
 const adminAuthService = require("./services/adminAuthService");
+const pageRenderer = require("./services/pageRenderer");
+const orderHooks = require("./services/orderHooks");
+const asyncHandler = require("./utils/asyncHandler");
 const { adminSessionCookieName } = require("./middleware/adminAuth");
+const { attachCustomerIfPresent } = require("./middleware/customerAuth");
+const { cors, csrfProtection, securityHeaders } = require("./middleware/security");
 const { getCookie } = require("./utils/cookies");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 
+orderHooks.register();
+
 const app = express();
 const clientPath = path.join(__dirname, "../../Client");
 
-// Render terminates the public connection at a proxy. Trust that proxy so
-// req.ip contains the visitor's address for the AI rate limiter.
+// Render (and Cloudflare in front of it) terminate TLS at a proxy. Trust exactly one
+// hop so req.ip is the visitor's address for rate limiting.
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
-app.use(
-  cors({
-    origin: env.clientOrigin,
-    credentials: true,
-  })
-);
+// Never write secrets that travel in URLs (verification tokens, feed keys) to logs.
+morgan.token("safe-url", (req) => String(req.originalUrl || req.url).replace(/([?&](?:token|key|hub\.verify_token|access_token)=)[^&]*/gi, "$1[redacted]").replace(/(\/callback\/)[^/?]+/, "$1[redacted]"));
+const logFormat = env.nodeEnv === "production"
+  ? ':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'
+  : ":method :safe-url :status :response-time ms - :res[content-length]";
+if (!env.isTest) app.use(morgan(logFormat));
+
+app.use(securityHeaders);
+app.use("/api", cors);
+
+// Webhooks need the raw request body (signature checks), so they are mounted before
+// the JSON parser.
+app.use("/api", webhookRoutes);
+
 app.use(express.json({ limit: "1mb" }));
-app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
+app.use("/api", csrfProtection);
 
 app.use("/api/health", healthRoutes);
 app.use("/api/products", productRoutes);
@@ -45,9 +63,28 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/marketing", marketingRoutes);
+app.use("/api", notFound);
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// ---- Feeds, SEO and policy pages ----------------------------------------------------
+app.get("/feeds/meta-catalog.xml", marketingController.catalogFeed("xml"));
+app.get("/feeds/meta-catalog.csv", marketingController.catalogFeed("csv"));
+app.get("/robots.txt", asyncHandler(async (req, res) => res.type("text/plain").send(await pageRenderer.robotsTxt(req))));
+app.get(
+  "/sitemap.xml",
+  asyncHandler(async (req, res) => {
+    const seo = await require("./services/integrationSettingsService").getConfig("seo");
+    if (!seo.sitemapEnabled) return res.status(404).type("text/plain").send("Not found");
+    return res.type("application/xml").send(await pageRenderer.sitemapXml(req));
+  })
+);
+Object.keys(pageRenderer.POLICIES).forEach((kind) => {
+  app.get("/" + kind, asyncHandler(async (req, res) => pageRenderer.renderPolicy(req, res, kind)));
+});
 
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"), { dotfiles: "ignore" }));
+
+// ---- HTML pages -----------------------------------------------------------------------
 const pageFiles = {
   index: "index.html",
   login: "login.html",
@@ -65,18 +102,11 @@ const pageFiles = {
   "admin-team": "admin-team.html",
   "admin-settings": "admin-settings.html",
   "admin-promotions": "admin-promotions.html",
+  "admin-integrations": "admin-integrations.html",
+  "admin-marketing": "admin-marketing.html",
+  "admin-access": "admin-access.html",
 };
-const adminPageNames = new Set([
-  "admin",
-  "admin-dashboard",
-  "admin-products",
-  "admin-orders",
-  "admin-customers",
-  "admin-testimonials",
-  "admin-team",
-  "admin-settings",
-  "admin-promotions",
-]);
+const isAdminPage = (pageName) => pageName === "admin" || pageName.startsWith("admin-");
 
 const adminPageGuard = async (req, res, next) => {
   try {
@@ -93,9 +123,12 @@ const adminPageGuard = async (req, res, next) => {
 };
 
 Object.entries(pageFiles).forEach(([pageName, fileName]) => {
-  const handler = (req, res) => res.sendFile(path.join(clientPath, fileName));
-  if (adminPageNames.has(pageName)) app.get("/" + pageName, adminPageGuard, handler);
-  else if (pageName !== "index") app.get("/" + pageName, handler);
+  const routePath = pageName === "index" ? "/" : "/" + pageName;
+  if (isAdminPage(pageName)) {
+    app.get(routePath, adminPageGuard, asyncHandler((req, res) => pageRenderer.renderPage(req, res, fileName, { admin: true })));
+  } else {
+    app.get(routePath, attachCustomerIfPresent, asyncHandler((req, res) => pageRenderer.renderPage(req, res, fileName)));
+  }
 });
 
 app.get("/:page.html", (req, res, next) => {
@@ -105,7 +138,10 @@ app.get("/:page.html", (req, res, next) => {
   return res.redirect(301, cleanPath + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""));
 });
 
-app.use(express.static(clientPath));
+// HTML is only ever served through the routes above (so it always gets nonces and the
+// admin guard); raw .html files are never served statically.
+app.use((req, res, next) => (/\.html?$/i.test(req.path) ? notFound(req, res, next) : next()));
+app.use(express.static(clientPath, { index: false, dotfiles: "ignore" }));
 
 app.use(notFound);
 app.use(errorHandler);

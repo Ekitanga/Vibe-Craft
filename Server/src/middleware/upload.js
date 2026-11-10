@@ -1,3 +1,5 @@
+const os = require("os");
+const crypto = require("crypto");
 const multer = require("multer");
 const HttpError = require("../utils/httpError");
 
@@ -10,6 +12,13 @@ const MAX_VIDEO_FILE_SIZE = 80 * 1024 * 1024;
 
 const storage = multer.memoryStorage();
 
+// Videos (up to 80MB) are streamed to a temp file instead of RAM, so a few concurrent
+// uploads cannot exhaust the server's memory. The controller deletes the file after use.
+const videoStorage = multer.diskStorage({
+  destination: os.tmpdir(),
+  filename: (_req, _file, cb) => cb(null, `vibecraft-upload-${crypto.randomUUID()}`),
+});
+
 const fileFilter = (_req, file, cb) => {
   if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
     cb(new HttpError(400, "Only JPEG, PNG, WEBP, or GIF images are allowed."));
@@ -21,7 +30,7 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES, fields: 20, fieldSize: 100 * 1024 },
 });
 
 const videoFileFilter = (_req, file, cb) => {
@@ -33,9 +42,9 @@ const videoFileFilter = (_req, file, cb) => {
 };
 
 const videoUpload = multer({
-  storage,
+  storage: videoStorage,
   fileFilter: videoFileFilter,
-  limits: { fileSize: MAX_VIDEO_FILE_SIZE, files: 1 },
+  limits: { fileSize: MAX_VIDEO_FILE_SIZE, files: 1, fields: 10, fieldSize: 10 * 1024 },
 });
 
 const uploadImages = (req, res, next) => {

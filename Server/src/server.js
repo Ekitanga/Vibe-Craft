@@ -1,41 +1,36 @@
 const app = require("./app");
 const env = require("./config/env");
 const db = require("./db/postgres");
+const { runMigrations } = require("./db/migrate");
 const adminAuthService = require("./services/adminAuthService");
-
-const ensureDatabaseMigrations = async () => {
-  await db.query(`ALTER TABLE orders
-    ADD COLUMN IF NOT EXISTS delivery_fee INTEGER NOT NULL DEFAULT 0`);
-};
-
-const ensureBootstrapAdmin = async () => {
-  if (!env.adminEmail || !env.adminPassword) {
-    return;
-  }
-
-  try {
-    await adminAuthService.createAdminUser({
-      email: env.adminEmail,
-      password: env.adminPassword,
-      name: env.adminName,
-    });
-    console.log(`Bootstrap admin ensured: ${env.adminEmail}`);
-  } catch (error) {
-    console.error("Could not ensure bootstrap admin:", error.message || error);
-  }
-};
+const jobs = require("./services/jobs");
 
 const startServer = async () => {
-  await ensureDatabaseMigrations();
-  await ensureBootstrapAdmin();
+  await runMigrations();
+  await adminAuthService.ensureBootstrapOwner();
 
-  app.listen(env.port, "0.0.0.0", () => {
+  if (env.isProduction && !env.settingsEncryptionKey) {
+    console.warn("SETTINGS_ENCRYPTION_KEY is not set: integration secrets use a database-stored key. Set it for stronger protection.");
+  }
+
+  const server = app.listen(env.port, "0.0.0.0", () => {
     console.log(`Vibecraft API listening on port ${env.port} using Gemini model ${env.geminiModel}`);
   });
+
+  if (env.backgroundJobs) jobs.start();
+
+  const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down.`);
+    jobs.stop();
+    server.close(() => db.pool.end().finally(() => process.exit(0)));
+    setTimeout(() => process.exit(0), 10000).unref();
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
 startServer().catch(async (error) => {
-  console.error("Could not initialize the database:", error.message || error);
+  console.error("Could not start the server:", error.message || error);
   await db.pool.end();
   process.exit(1);
 });

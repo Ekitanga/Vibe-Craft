@@ -1,3 +1,5 @@
+const env = require("../config/env");
+
 const parseCookies = (cookieHeader) => {
   if (!cookieHeader) {
     return {};
@@ -13,7 +15,7 @@ const parseCookies = (cookieHeader) => {
     const name = item.slice(0, separatorIndex).trim();
     const value = item.slice(separatorIndex + 1).trim();
 
-    if (!name) {
+    if (!name || Object.prototype.hasOwnProperty.call(cookies, name)) {
       return cookies;
     }
 
@@ -29,7 +31,17 @@ const parseCookies = (cookieHeader) => {
 
 const getCookie = (req, name) => parseCookies(req.headers.cookie || "")[name];
 
+// HTTP-only, SameSite=Lax session cookies; Secure in production.
+const sessionCookieOptions = (expiresAt) => ({
+  httpOnly: true,
+  sameSite: "lax",
+  secure: env.isProduction,
+  path: "/",
+  expires: expiresAt ? new Date(expiresAt) : undefined,
+});
+
 module.exports = {
   getCookie,
   parseCookies,
+  sessionCookieOptions,
 };

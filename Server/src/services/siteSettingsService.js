@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   heroDescription: "Thoughtful projector setups for movie nights, big ideas, and shared moments.",
   phone: "0707 472897",
   whatsapp: "0707 472897",
+  contactEmail: "",
   paybill: "522533",
   mpesaAccount: "8055906",
   address: "Rasumal House, 4th floor, Shop 14",
@@ -39,6 +40,7 @@ const toSettings = (row) => ({
   heroDescription: row.hero_description,
   phone: row.phone,
   whatsapp: row.whatsapp,
+  contactEmail: row.contact_email || "",
   paybill: row.paybill,
   mpesaAccount: row.mpesa_account,
   address: row.address,
@@ -84,6 +86,12 @@ const cleanText = (value, fallback, maxLength) => {
   const text = String(value === undefined || value === null ? fallback : value).trim();
   if (text.length > maxLength) throw new HttpError(400, `Setting is too long (maximum ${maxLength} characters).`);
   return text;
+};
+
+const cleanEmail = (value, fallback) => {
+  const email = cleanText(value, fallback || "", 254);
+  if (email && !/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(email)) throw new HttpError(400, "Contact email must be a valid email address.");
+  return email;
 };
 
 const cleanColor = (value, fallback) => {
@@ -148,6 +156,7 @@ const updateSettings = async (input = {}, adminId) => {
     heroDescription: cleanText(input.heroDescription, current.heroDescription, 240),
     phone: cleanText(input.phone, current.phone, 40),
     whatsapp: cleanText(input.whatsapp, current.whatsapp, 40),
+    contactEmail: cleanEmail(input.contactEmail, current.contactEmail),
     paybill: cleanText(input.paybill, current.paybill, 40),
     mpesaAccount: cleanText(input.mpesaAccount, current.mpesaAccount, 60),
     address: cleanText(input.address, current.address, 180),
@@ -184,12 +193,13 @@ const updateSettings = async (input = {}, adminId) => {
         phone = $5, whatsapp = $6, paybill = $7, mpesa_account = $8,
         address = $9, opening_hours = $10, announcement = $11,
         primary_color = $12, accent_color = $13, low_stock_threshold = $14,
-        delivery_fees = $15, delivery_availability = $16, social_links = $17, free_delivery_minimum = $18
+        delivery_fees = $15, delivery_availability = $16, social_links = $17, free_delivery_minimum = $18,
+        contact_email = $19
        WHERE id = 1
        RETURNING *`,
       [values.storeName, values.tagline, values.heroTitle, values.heroDescription, values.phone, values.whatsapp,
         values.paybill, values.mpesaAccount, values.address, values.openingHours, values.announcement,
-        values.primaryColor, values.accentColor, values.lowStockThreshold, JSON.stringify(values.deliveryFees), JSON.stringify(values.deliveryAvailability), JSON.stringify(values.socialLinks), values.freeDeliveryMinimum]
+        values.primaryColor, values.accentColor, values.lowStockThreshold, JSON.stringify(values.deliveryFees), JSON.stringify(values.deliveryAvailability), JSON.stringify(values.socialLinks), values.freeDeliveryMinimum, values.contactEmail]
     );
 
     return toSettings(result.rows[0]);
@@ -221,12 +231,13 @@ const resetPreviousSettings = async (adminId) => db.withTransaction(async (clien
       phone = $5, whatsapp = $6, paybill = $7, mpesa_account = $8,
       address = $9, opening_hours = $10, announcement = $11,
       primary_color = $12, accent_color = $13, low_stock_threshold = $14,
-      delivery_fees = $15, delivery_availability = $16, social_links = $17, free_delivery_minimum = $18
+      delivery_fees = $15, delivery_availability = $16, social_links = $17, free_delivery_minimum = $18,
+      contact_email = $19
      WHERE id = 1
      RETURNING *`,
     [previous.storeName, previous.tagline, previous.heroTitle, previous.heroDescription, previous.phone, previous.whatsapp,
       previous.paybill, previous.mpesaAccount, previous.address, previous.openingHours, previous.announcement,
-      previous.primaryColor, previous.accentColor, previous.lowStockThreshold, JSON.stringify(previous.deliveryFees || {}), JSON.stringify(previous.deliveryAvailability || {}), JSON.stringify(previous.socialLinks || DEFAULT_SETTINGS.socialLinks), previous.freeDeliveryMinimum || 0]
+      previous.primaryColor, previous.accentColor, previous.lowStockThreshold, JSON.stringify(previous.deliveryFees || {}), JSON.stringify(previous.deliveryAvailability || {}), JSON.stringify(previous.socialLinks || DEFAULT_SETTINGS.socialLinks), previous.freeDeliveryMinimum || 0, previous.contactEmail || ""]
   );
 
   return toSettings(result.rows[0]);

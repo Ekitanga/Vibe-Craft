@@ -1,11 +1,9 @@
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
 const db = require("./postgres");
+const { runMigrations } = require("./migrate");
 const env = require("../config/env");
 const { categories, products } = require("../data/catalog");
 
-const schemaPath = path.join(__dirname, "postgres-schema.sql");
 const resetRequested = process.argv.includes("--reset");
 
 const toBoolean = (value) => value === true || value === "true" || value === 1;
@@ -261,24 +259,8 @@ const countRows = async (tableName) => {
 };
 
 const initializePostgres = async () => {
-  const schema = fs.readFileSync(schemaPath, "utf8");
-
-  await db.query(schema);
-  await db.query("ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS profile_image_url TEXT");
-  await db.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS promotion_code TEXT, ADD COLUMN IF NOT EXISTS discount_amount INTEGER NOT NULL DEFAULT 0");
-  await db.query("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS delivery_fees JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS delivery_availability JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS social_links JSONB NOT NULL DEFAULT '{}'::jsonb, ADD COLUMN IF NOT EXISTS free_delivery_minimum INTEGER NOT NULL DEFAULT 0");
-  await db.query("ALTER TABLE admin_users DROP CONSTRAINT IF EXISTS admin_users_role_check");
-  await db.query("ALTER TABLE admin_users ADD CONSTRAINT admin_users_role_check CHECK (role IN ('owner', 'admin', 'manager', 'editor'))");
-  await db.query(`ALTER TABLE orders
-    ADD COLUMN IF NOT EXISTS delivery_county TEXT,
-    ADD COLUMN IF NOT EXISTS delivery_town TEXT,
-    ADD COLUMN IF NOT EXISTS delivery_address TEXT,
-    ADD COLUMN IF NOT EXISTS delivery_landmark TEXT,
-    ADD COLUMN IF NOT EXISTS preferred_delivery_date DATE,
-    ADD COLUMN IF NOT EXISTS preferred_delivery_time TEXT,
-    ADD COLUMN IF NOT EXISTS delivery_fee INTEGER NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS mpesa_code TEXT,
-    ADD COLUMN IF NOT EXISTS payment_verified BOOLEAN NOT NULL DEFAULT FALSE`);
+  // The schema is owned by the tracked migrations (src/db/migrations); seeding only adds data.
+  await runMigrations();
 
   await db.withTransaction(async (client) => {
     if (resetRequested) {

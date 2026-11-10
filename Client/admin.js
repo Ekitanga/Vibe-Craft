@@ -12,13 +12,55 @@
   async function requireSession() {
     try {
       var payload = await window.VibecraftApi.get("admin/auth/me");
-      if (payload && payload.data) return payload.data;
+      if (payload && payload.data) {
+        var admin = payload.data;
+        currentAdmin = admin;
+        // A weak password (e.g. one set before the password rules) must be changed first.
+        if (admin.mustChangePassword && currentPage() !== "/admin-team") {
+          window.location.href = "/admin-team?changePassword=1";
+          return null;
+        }
+        return admin;
+      }
     } catch (_error) {
       // fall through to redirect
     }
 
     window.location.href = loginUrl();
     return null;
+  }
+
+  var currentAdmin = null;
+
+  function can(permission, admin) {
+    var subject = admin || currentAdmin;
+    var held = (subject && subject.permissions) || [];
+    var wanted = Array.isArray(permission) ? permission : [permission];
+    return wanted.some(function (key) { return held.indexOf(key) !== -1; });
+  }
+
+  // Which permission each admin page needs (any of the listed ones).
+  var PAGE_PERMISSIONS = {
+    "admin-dashboard": ["dashboard.view"],
+    "admin-products": ["products.manage"],
+    "admin-orders": ["orders.view"],
+    "admin-customers": ["customers.view"],
+    "admin-testimonials": ["testimonials.manage"],
+    "admin-settings": ["settings.manage"],
+    "admin-promotions": ["promotions.manage"],
+    "admin-marketing": ["marketing.view"],
+    "admin-integrations": ["integrations.manage"],
+    "admin-access": ["roles.manage", "team.manage", "team.view"],
+  };
+
+  var EXTRA_NAV = [
+    { page: "admin-marketing", label: "Marketing" },
+    { page: "admin-integrations", label: "Integrations" },
+    { page: "admin-access", label: "Access" },
+  ];
+
+  function pageKeyFromHref(href) {
+    return String(href || "").replace(/^\//, "").replace(/\.html$/, "").split(/[?#]/)[0];
   }
 
   function wireSignOut(buttonId) {
@@ -49,13 +91,23 @@
     if (menuName) menuName.textContent = name;
     if (menuEmail) menuEmail.textContent = admin.email || "";
 
-    var canManageSettings = ["owner", "admin", "manager"].indexOf(admin.role) !== -1;
-    var canManageTeam = ["owner", "admin"].indexOf(admin.role) !== -1;
-    document.querySelectorAll(".admin-nav a").forEach(function (link) {
-      var href = link.getAttribute("href") || "";
-      if (href === "/admin-settings" || href === "/admin-promotions" || href === "admin-settings.html" || href === "admin-promotions.html") link.hidden = !canManageSettings;
-      if (href === "/admin-team" || href === "admin-team.html") link.hidden = !canManageTeam;
-    });
+    var nav = document.querySelector(".admin-nav");
+    if (nav) {
+      EXTRA_NAV.forEach(function (item) {
+        if (nav.querySelector('a[href="/' + item.page + '"], a[href="' + item.page + '.html"]')) return;
+        var link = document.createElement("a");
+        link.href = "/" + item.page;
+        link.textContent = item.label;
+        nav.appendChild(link);
+      });
+      // Every admin keeps the Team page: it is where they change their own password.
+      nav.querySelectorAll("a").forEach(function (link) {
+        var required = PAGE_PERMISSIONS[pageKeyFromHref(link.getAttribute("href"))];
+        link.hidden = Boolean(required) && !can(required, admin);
+      });
+      markActiveNav();
+    }
+    guardPage(admin);
 
     function setOpen(isOpen) {
       toggle.setAttribute("aria-expanded", String(isOpen));
@@ -79,12 +131,25 @@
   }
 
   function markActiveNav() {
-    var page = currentPage();
+    var page = pageKeyFromHref(currentPage());
+    if (page === "admin") page = "admin-dashboard";
     document.querySelectorAll(".admin-nav a").forEach(function (link) {
-      if (link.getAttribute("href") === page) {
+      if (pageKeyFromHref(link.getAttribute("href")) === page) {
         link.setAttribute("aria-current", "page");
       }
     });
+  }
+
+  // Shows a friendly message instead of a broken page when a role lacks access.
+  function guardPage(admin, container) {
+    var required = PAGE_PERMISSIONS[pageKeyFromHref(currentPage())];
+    if (!required || can(required, admin)) return true;
+    var host = container || document.querySelector(".admin-shell");
+    if (host) {
+      host.innerHTML = '<section class="admin-panel"><div class="admin-panel-heading"><div><h2>No access</h2>' +
+        '<p class="panel-copy">Your role (' + escapeHtml(admin.roleName || admin.role) + ") does not include this page. Ask an owner if you need it.</p></div></div></section>";
+    }
+    return false;
   }
 
   function wireAdminNavigation() {
@@ -171,6 +236,8 @@
     renderAccountMenu: renderAccountMenu,
     markActiveNav: markActiveNav,
     escapeHtml: escapeHtml,
+    can: can,
+    guardPage: guardPage,
     loadSettings: loadSettings,
     lowStockThreshold: LOW_STOCK_THRESHOLD,
     stockStatus: stockStatus,

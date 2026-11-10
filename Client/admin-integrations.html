@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Connect Meta, M-Pesa and email, and control security — all without touching code." />
+    <title>Vibecraft — Integrations</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="style.css?v=admin-settings-delivery-3" />
+    <link rel="stylesheet" href="admin-extras.css?v=1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="admin-products.html">Products</a>
+        <a href="admin-orders.html">Orders</a>
+        <a href="admin-customers.html">Customers</a>
+        <a href="admin-team.html">Team</a>
+        <a href="admin-settings.html">Settings</a>
+        <a href="admin-promotions.html">Promotions</a>
+      </nav>
+      <div class="admin-account">
+        <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu"><span class="admin-account-avatar" id="adminAccountAvatar">A</span><span class="admin-account-caret">▾</span></button>
+        <div class="admin-account-menu" id="adminAccountMenu" role="menu" hidden>
+          <div class="admin-account-info"><strong id="adminAccountMenuName">Admin</strong><span id="adminAccountEmail"></span></div>
+          <a class="admin-account-item" href="index.html" role="menuitem">View store</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="adminSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="admin-shell">
+        <div class="admin-topbar">
+          <div><p class="eyebrow">Admin</p><h1>Integrations</h1></div>
+          <p class="admin-topbar-note">Connect Meta, M-Pesa and email, and tune security. Changes apply within seconds.</p>
+        </div>
+        <p class="admin-notice" id="encryptionNotice" hidden></p>
+        <nav class="section-jump" id="sectionJump" aria-label="Jump to section"></nav>
+        <div id="integrationSections"><section class="admin-panel"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading…</span></span></section></div>
+      </div>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js?v=admin-no-theme-1"></script>
+    <script src="admin.js?v=sec-meta-1"></script>
+    <script src="admin-integrations.js?v=1"></script>
+  </body>
+</html>

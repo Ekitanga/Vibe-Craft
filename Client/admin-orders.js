@@ -65,8 +65,29 @@
       items ? '<div><strong>Items</strong><ul class="order-detail-items">' + items + "</ul></div>" : "",
       answers ? '<div><strong>Inquiry</strong><ul class="order-detail-items">' + answers + "</ul></div>" : "",
       order.notes ? '<p class="order-detail-notes">Notes: ' + escape(order.notes) + "</p>" : "",
+      order.fulfillment === "pickup" ? "<div><strong>Fulfilment:</strong> Pickup at the store</div>" : "",
+      order.cancelReason ? "<div><strong>Cancelled:</strong> " + escape(order.cancelReason) + "</div>" : "",
+      sourceLabel(order) ? "<div><strong>Came from:</strong> " + escape(sourceLabel(order)) + "</div>" : "",
+      !order.paymentVerified && order.status !== "cancelled" && window.VibecraftAdmin.can("payments.verify")
+        ? '<div><button type="button" class="text-button" data-mpesa-request="' + escape(order.id) + '">Send M-Pesa payment prompt</button></div>'
+        : "",
       "</div>",
     ].join("");
+  }
+
+  // Where the customer came from (ad click, tagged link or referrer), if known.
+  function sourceLabel(order) {
+    var attribution = order.attribution || {};
+    var touch = attribution.last || attribution.first;
+    if (!touch) return attribution.fbclid ? "Meta ad click" : "";
+    if (touch.fbclid && !touch.utm_source) return "Meta ad click";
+    var parts = [touch.utm_source, touch.utm_medium, touch.utm_campaign].filter(Boolean);
+    if (parts.length) return parts.join(" / ");
+    try {
+      return touch.referrer ? new URL(touch.referrer).hostname : "";
+    } catch (_error) {
+      return "";
+    }
   }
 
   function paymentCell(order) {
@@ -138,6 +159,23 @@
     if (toggleId) {
       var row = tableBody.querySelector('[data-detail-for="' + toggleId + '"]');
       if (row) row.classList.toggle("is-hidden");
+      return;
+    }
+
+    var mpesaOrderId = event.target.getAttribute("data-mpesa-request");
+    if (mpesaOrderId) {
+      var order = state.orders.find(function (item) { return item.id === mpesaOrderId; });
+      var phone = window.prompt("Send an M-Pesa payment prompt to which number?", order && order.customer ? order.customer.phone || "" : "");
+      if (!phone) return;
+      event.target.disabled = true;
+      try {
+        var result = await window.VibecraftApi.post("admin/orders/" + encodeURIComponent(mpesaOrderId) + "/mpesa-request", { phone: phone });
+        window.alert((result.data && result.data.message) || "Payment prompt sent. The order is marked paid automatically once the customer completes it.");
+      } catch (error) {
+        window.alert(error.message || "Could not send the payment prompt.");
+      } finally {
+        event.target.disabled = false;
+      }
       return;
     }
 

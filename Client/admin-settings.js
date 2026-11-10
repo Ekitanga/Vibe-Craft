@@ -20,7 +20,7 @@
   var countyEnabled = document.getElementById("deliveryCountyEnabled");
   var saveCountyButton = document.getElementById("saveDeliveryCounty");
   var removeCountyButton = document.getElementById("removeDeliveryCounty");
-  var fields = ["storeName", "tagline", "heroTitle", "heroDescription", "announcement", "phone", "whatsapp", "paybill", "mpesaAccount", "address", "openingHours", "freeDeliveryMinimum", "primaryColor", "accentColor", "lowStockThreshold"];
+  var fields = ["storeName", "tagline", "heroTitle", "heroDescription", "announcement", "phone", "whatsapp", "contactEmail", "paybill", "mpesaAccount", "address", "openingHours", "freeDeliveryMinimum", "primaryColor", "accentColor", "lowStockThreshold"];
   var socialFields = {
     socialInstagram: "instagram",
     socialTiktok: "tiktok",

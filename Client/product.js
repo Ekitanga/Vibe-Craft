@@ -408,6 +408,15 @@
       var product = payload.data;
 
       document.title = "Vibecraft — " + product.name;
+      if (window.VibecraftMeta) {
+        window.VibecraftMeta.track("ViewContent", {
+          content_ids: [product.id],
+          content_name: product.name,
+          content_type: "product",
+          value: Number(product.price || 0),
+          currency: product.currency || "KES",
+        });
+      }
       loadCategoryName(product.categoryId);
 
       var productSpecs = product.specs || {};

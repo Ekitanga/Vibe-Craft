@@ -1,13 +1,11 @@
 const express = require("express");
 const promotionController = require("../controllers/promotionController");
-const { requireAdmin } = require("../middleware/adminAuth");
+const { promoLimit } = require("../middleware/abuseLimits");
 
 const router = express.Router();
 
-router.post("/validate", promotionController.validatePromotion);
-router.get("/", requireAdmin, promotionController.listPromotions);
-router.post("/", requireAdmin, promotionController.createPromotion);
-router.patch("/:id", requireAdmin, promotionController.updatePromotion);
-router.delete("/:id", requireAdmin, promotionController.deletePromotion);
+// Public: checkout checks a code. Management lives under /api/admin/promotions with
+// permission checks (the unrestricted duplicates that used to be here were removed).
+router.post("/validate", promoLimit, promotionController.validatePromotion);
 
 module.exports = router;

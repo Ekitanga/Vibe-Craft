@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Roles and what each one can do." />
+    <title>Vibecraft — Access control</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="style.css?v=admin-settings-delivery-3" />
+    <link rel="stylesheet" href="admin-extras.css?v=1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="admin-products.html">Products</a>
+        <a href="admin-orders.html">Orders</a>
+        <a href="admin-customers.html">Customers</a>
+        <a href="admin-team.html">Team</a>
+        <a href="admin-settings.html">Settings</a>
+        <a href="admin-promotions.html">Promotions</a>
+      </nav>
+      <div class="admin-account">
+        <button class="admin-account-toggle" id="adminAccountToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminAccountMenu"><span class="admin-account-avatar" id="adminAccountAvatar">A</span><span class="admin-account-caret">▾</span></button>
+        <div class="admin-account-menu" id="adminAccountMenu" role="menu" hidden>
+          <div class="admin-account-info"><strong id="adminAccountMenuName">Admin</strong><span id="adminAccountEmail"></span></div>
+          <a class="admin-account-item" href="index.html" role="menuitem">View store</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="adminSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="admin-shell">
+        <div class="admin-topbar">
+          <div><p class="eyebrow">Admin</p><h1>Access control</h1></div>
+          <p class="admin-topbar-note">Decide exactly what each role can see and do. Assign roles to people on the Team page.</p>
+        </div>
+        <p class="admin-notice" id="accessNotice">Owners always have full access. You can only edit roles ranked below your own, and only grant permissions you hold.</p>
+        <div id="roleCards"><section class="admin-panel"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading…</span></span></section></div>
+
+        <section class="admin-panel" id="createRoleSection" hidden>
+          <div class="admin-panel-heading"><div><h2>Create a role</h2><p class="panel-copy">For example “Support” (orders and customers, no products) or “Marketing” (marketing and promotions).</p></div></div>
+          <form id="createRoleForm" novalidate>
+            <div class="form-grid">
+              <div class="field"><label for="newRoleName">Role name</label><input id="newRoleName" required minlength="2" maxlength="40" /></div>
+              <div class="field"><label for="newRoleRank">Rank <small>(1–99, higher = more senior)</small></label><input id="newRoleRank" type="number" min="1" max="99" value="30" required /></div>
+              <div class="field field-wide"><label for="newRoleDescription">Description</label><input id="newRoleDescription" maxlength="200" /></div>
+            </div>
+            <div class="perm-grid" id="newRolePermissions"></div>
+            <div class="panel-actions"><button class="button button-dark auth-submit" type="submit">Create role</button><p class="form-status" id="createRoleStatus" role="status"></p></div>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js?v=admin-no-theme-1"></script>
+    <script src="admin.js?v=sec-meta-1"></script>
+    <script src="admin-access.js?v=1"></script>
+  </body>
+</html>

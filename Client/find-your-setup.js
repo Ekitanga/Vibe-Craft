@@ -15,6 +15,8 @@
 
   if (!form) return;
 
+  var leadTracked = false;
+
   var history = [];
   var compareProducts = [];
 
@@ -201,6 +203,10 @@
 
       removeThinking();
       appendMessage("assistant", reply);
+      if (!leadTracked && window.VibecraftMeta) {
+        window.VibecraftMeta.track("Lead", { content_name: "Vibecraft setup finder" });
+        leadTracked = true;
+      }
 
       history.push({ role: "user", content: trimmed });
       history.push({ role: "assistant", content: reply });

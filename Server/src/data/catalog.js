@@ -9,6 +9,11 @@ const categories = [
     name: "Projector Screens",
     description: "Tripod, wall-mounted, and portable projector screens.",
   },
+  {
+    id: "mounts",
+    name: "Mounts & Accessories",
+    description: "Mounts, cables and installation accessories.",
+  },
 ];
 
 const projectorGallery = [

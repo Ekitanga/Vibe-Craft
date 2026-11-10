@@ -38,6 +38,7 @@
     }
 
     writeCart(items);
+    document.dispatchEvent(new CustomEvent("cart:add", { detail: { productId: productId, quantity: quantity } }));
   }
 
   function setQuantity(productId, quantity) {
