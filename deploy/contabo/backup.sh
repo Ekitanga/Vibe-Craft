@@ -8,7 +8,9 @@ KEEP_DAYS=14
 STAMP="$(date +%Y-%m-%d_%H%M)"
 FILE="$DIR/vibecraft_$STAMP.dump"
 
-sudo -u postgres pg_dump --format=custom --no-owner --dbname=vibecraft --file="$FILE"
+# Same PostgreSQL port the app uses (the server may run several clusters).
+PGPORT="$(grep -E '^DATABASE_URL=' /etc/vibecraft/vibecraft.env | sed -E 's|.*:([0-9]+)/[^/]*$|\1|')"
+sudo -u postgres pg_dump --port="${PGPORT:-5432}" --format=custom --no-owner --dbname=vibecraft --file="$FILE"
 chmod 640 "$FILE"
 find "$DIR" -name 'vibecraft_*.dump' -mtime +"$KEEP_DAYS" -delete
 echo "$(date -Is) backup ok: $FILE ($(du -h "$FILE" | cut -f1))"

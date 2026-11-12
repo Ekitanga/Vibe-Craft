@@ -15,12 +15,13 @@ PREVIOUS="$(sudo -u vibecraft git -C "$APP_DIR" rev-parse --short HEAD)"
 sudo -u vibecraft git -C "$APP_DIR" fetch --quiet origin
 sudo -u vibecraft git -C "$APP_DIR" checkout --quiet "$BRANCH"
 sudo -u vibecraft git -C "$APP_DIR" pull --quiet --ff-only origin "$BRANCH"
-sudo -u vibecraft bash -c "cd '$APP_DIR/Server' && npm ci --omit=dev --no-audit --no-fund"
+sudo -u vibecraft env PATH="/opt/vibecraft-node/bin:$PATH" bash -c "cd '$APP_DIR/Server' && npm ci --omit=dev --no-audit --no-fund"
 
 echo "==> Restarting"
 systemctl restart vibecraft
 sleep 4
-if curl -fsS --max-time 10 http://127.0.0.1:5000/api/health >/dev/null; then
+PORT="$(grep -E '^PORT=' /etc/vibecraft/vibecraft.env | cut -d= -f2)"
+if curl -fsS --max-time 10 "http://127.0.0.1:${PORT:-5000}/api/health" >/dev/null; then
   echo "Deployed $(sudo -u vibecraft git -C "$APP_DIR" rev-parse --short HEAD) (was $PREVIOUS). Healthy."
 else
   echo "Health check FAILED. Logs: sudo journalctl -u vibecraft -n 100"

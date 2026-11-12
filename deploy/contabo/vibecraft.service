@@ -1,8 +1,7 @@
 [Unit]
 Description=Vibecraft store (Node.js)
 After=network-online.target postgresql.service
-Wants=network-online.target
-Requires=postgresql.service
+Wants=network-online.target postgresql.service
 
 [Service]
 Type=simple
@@ -10,7 +9,8 @@ User=vibecraft
 Group=vibecraft
 WorkingDirectory=/opt/vibecraft/Server
 EnvironmentFile=/etc/vibecraft/vibecraft.env
-ExecStart=/usr/bin/node src/server.js
+# Private Node.js runtime installed by setup.sh (does not affect other apps).
+ExecStart=/opt/vibecraft-node/bin/node src/server.js
 Restart=always
 RestartSec=5
 # Give in-flight requests time to finish on restart.
