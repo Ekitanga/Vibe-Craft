@@ -1,6 +1,6 @@
 # Hosting Vibecraft on a Contabo VPS
 
-> **For the Contabo server at 169.58.30.49:** it runs Docker + Caddy (not nginx), so use
+> **For the Contabo server that runs Docker + Caddy:** use
 > [deploy/docker/README.md](../docker/README.md). This guide is for plain nginx servers.
 
 This moves the store from Render to your own Contabo server: Node.js app + PostgreSQL

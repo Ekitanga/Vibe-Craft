@@ -1,6 +1,6 @@
 # Deploying Vibecraft on the Contabo server (Docker + shared Caddy)
 
-Written for the server at 169.58.30.49, which already runs dlight-pos, triple-junction,
+Written for the Contabo server that already runs dlight-pos, triple-junction,
 aspect-trading and desert-tech as Docker Compose projects behind one Caddy container
 (`contabo-caddy-1`, config in `/opt/dlight-pos/deploy/contabo/Caddyfile`).
 
@@ -75,7 +75,7 @@ docker exec contabo-caddy-1 caddy reload --config /etc/caddy/Caddyfile
 ## 5. Point the domain to the server
 
 Namecheap → vibecraft254.com → **Advanced DNS**: set two A records, `@` and `www`, to
-`169.58.30.49` (TTL 5 min) and delete the old Render records for `@`/`www`. Leave
+your server's IP address (TTL 5 min) and delete the old Render records for `@`/`www`. Leave
 MX/TXT (email) records alone.
 
 Caddy obtains the HTTPS certificate automatically within a minute of DNS pointing at the
