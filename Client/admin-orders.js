@@ -66,6 +66,7 @@
       answers ? '<div><strong>Inquiry</strong><ul class="order-detail-items">' + answers + "</ul></div>" : "",
       order.notes ? '<p class="order-detail-notes">Notes: ' + escape(order.notes) + "</p>" : "",
       order.fulfillment === "pickup" ? "<div><strong>Fulfilment:</strong> Pickup at the store</div>" : "",
+      order.channel && order.channel !== "website" ? "<div><strong>Recorded sale:</strong> " + escape(({ whatsapp: "WhatsApp", phone: "Phone call", walk_in: "Walk-in", other: "Other" })[order.channel] || order.channel) + "</div>" : "",
       order.cancelReason ? "<div><strong>Cancelled:</strong> " + escape(order.cancelReason) + "</div>" : "",
       sourceLabel(order) ? "<div><strong>Came from:</strong> " + escape(sourceLabel(order)) + "</div>" : "",
       !order.paymentVerified && order.status !== "cancelled" && window.VibecraftAdmin.can("payments.verify")
@@ -213,6 +214,9 @@
       select.disabled = false;
     }
   });
+
+  // Refresh after a WhatsApp/phone sale is recorded on this page.
+  document.addEventListener("orders:changed", function () { loadOrders().catch(function () {}); });
 
   async function boot() {
     var admin = await window.VibecraftAdmin.requireSession();

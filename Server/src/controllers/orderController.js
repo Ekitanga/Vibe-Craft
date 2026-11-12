@@ -44,6 +44,53 @@ const createOrder = asyncHandler(async (req, res) => {
   });
 });
 
+// Staff record a sale that was closed on WhatsApp, by phone or in the shop, so it
+// counts in stock, reports and Meta (sent as an offline Purchase matched by phone).
+const recordManualSale = asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const channel = String(body.channel || "");
+  if (!["whatsapp", "phone", "walk_in", "other"].includes(channel)) throw new HttpError(400, "Choose where the sale happened.");
+  const status = body.status === undefined ? "confirmed" : String(body.status);
+  if (!["pending", "confirmed", "processing", "completed"].includes(status)) throw new HttpError(400, "Invalid order status.");
+  const markPaid = body.paid === true || body.paid === "true";
+  if (markPaid && !req.admin.permissions.includes("payments.verify")) {
+    throw new HttpError(403, "Recording a sale as paid needs the Verify payments permission. Untick Paid or ask a manager.");
+  }
+  const campaign = typeof body.campaign === "string" ? body.campaign.trim().slice(0, 150) : "";
+  const touch = body.fromMetaAd
+    ? { utm_source: "facebook", utm_medium: channel, utm_campaign: campaign || undefined, at: new Date().toISOString() }
+    : campaign
+      ? { utm_source: "store", utm_medium: channel, utm_campaign: campaign, at: new Date().toISOString() }
+      : null;
+
+  const created = await orderService.createOrder(
+    {
+      customer: body.customer,
+      items: body.items,
+      fulfillment: body.fulfillment === "delivery" ? "delivery" : "pickup",
+      delivery: body.delivery || {},
+      deliveryFee: body.deliveryFee,
+      notes: body.notes,
+      mpesaCode: body.mpesaCode,
+      promotionCode: body.promotionCode,
+      attribution: touch ? { last: touch } : undefined,
+    },
+    { manual: { channel, adminId: req.admin.id } }
+  );
+
+  let order = created;
+  if (status !== "pending") order = await orderService.updateOrderStatus(order.id, status);
+  if (markPaid) order = await orderService.updatePaymentVerification(order.id, true);
+
+  await auditService.record(req.admin, "record_manual_sale", "order", order.id, {
+    channel,
+    total: order.total,
+    paid: order.paymentVerified,
+    fromMetaAd: Boolean(body.fromMetaAd),
+  });
+  res.status(201).json({ success: true, data: order });
+});
+
 const listMyOrders = asyncHandler(async (req, res) => {
   const orders = await orderService.listOrdersForAccount({
     accountId: req.customer.id,
@@ -83,6 +130,7 @@ module.exports = {
   listMyOrders,
   listOrderPayments,
   listOrders,
+  recordManualSale,
   requestMpesaPayment,
   updateOrderStatus,
   updatePaymentVerification,

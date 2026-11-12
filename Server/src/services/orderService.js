@@ -16,7 +16,7 @@ const ORDER_COLUMNS = `
   o.id, o.customer_id, o.customer_account_id, o.notes, o.status, o.total, o.delivery_fee, o.promotion_code,
   o.discount_amount, o.currency, o.delivery_county, o.delivery_town, o.delivery_address, o.delivery_landmark,
   o.preferred_delivery_date, o.preferred_delivery_time, o.mpesa_code, o.payment_verified, o.payment_verified_at,
-  o.fulfillment, o.attribution, o.cancel_reason, o.created_at, o.updated_at,
+  o.fulfillment, o.attribution, o.cancel_reason, o.channel, o.created_at, o.updated_at,
   c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email, c.location AS customer_location`;
 
 const mapOrderRow = (row) => ({
@@ -34,6 +34,7 @@ const mapOrderRow = (row) => ({
   notes: row.notes || "",
   status: row.status,
   fulfillment: row.fulfillment || "delivery",
+  channel: row.channel || "website",
   total: Number(row.total || 0),
   subtotal: Math.max(0, Number(row.total || 0) - Number(row.delivery_fee || 0) + Number(row.discount_amount || 0)),
   deliveryFee: Number(row.delivery_fee || 0),
@@ -285,18 +286,25 @@ const runHooks = (list, ...args) => {
 const isPickupRequest = (payload) =>
   payload.fulfillment === "pickup" || (!payload.fulfillment && String(payload.notes || "").trim().startsWith("Pickup requested"));
 
+const SALE_CHANNELS = ["website", "whatsapp", "phone", "walk_in", "other"];
+
+// context.manual = { channel, adminId } when staff record a sale closed on WhatsApp,
+// by phone or in the shop. Those skip the anonymous-checkout abuse limits, allow an
+// optional delivery address/fee, and are tagged with their channel.
 const createOrder = async (payload = {}, context = {}) => {
-  const { customerAccountId = null, ip = null } = typeof context === "string" || context === null ? { customerAccountId: context } : context;
+  const { customerAccountId = null, ip = null, manual = null } = typeof context === "string" || context === null ? { customerAccountId: context } : context;
+  const channel = manual ? manual.channel : "website";
+  if (!SALE_CHANNELS.includes(channel)) throw new HttpError(400, "Choose where the sale happened.");
   const customer = validateCustomer(payload.customer);
   const isPickup = isPickupRequest(payload);
-  const delivery = validateDelivery(payload.delivery || {}, { required: !isPickup });
+  const delivery = validateDelivery(payload.delivery || {}, { required: !isPickup && !manual });
   const notes = text(payload.notes, 1000);
   const mpesaCode = text(payload.mpesaCode, 30).replace(/\s+/g, "").toUpperCase() || null;
   if (mpesaCode && !/^[A-Z0-9]{8,12}$/.test(mpesaCode)) throw new HttpError(400, "The M-Pesa code looks invalid. It is usually 10 letters and numbers.");
 
   const security = await integrationSettings.getConfig("security");
   const maxOpen = Number(security.maxPendingOrdersPerPhone || 0);
-  if (maxOpen > 0 && (await countOpenOrdersForPhone(customer.phone)) >= maxOpen) {
+  if (!manual && maxOpen > 0 && (await countOpenOrdersForPhone(customer.phone)) >= maxOpen) {
     throw new HttpError(
       429,
       "You already have orders waiting for confirmation. We'll be in touch shortly — or call/WhatsApp us to add to them."
@@ -306,11 +314,17 @@ const createOrder = async (payload = {}, context = {}) => {
   const items = await normalizeItems(payload.items);
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
 
-  if (!isPickup && !(await isDeliveryCountyAvailable(delivery.county))) {
+  if (!manual && !isPickup && !(await isDeliveryCountyAvailable(delivery.county))) {
     throw new HttpError(400, "We do not currently deliver to that county.");
   }
   // Pickup is collected in store: no delivery fee (matches what checkout shows the customer).
-  const deliveryFee = isPickup ? 0 : await getConfiguredDeliveryFee(delivery.county, subtotal);
+  let deliveryFee = isPickup ? 0 : await getConfiguredDeliveryFee(delivery.county, subtotal);
+  if (manual && !isPickup && payload.deliveryFee !== undefined && payload.deliveryFee !== "") {
+    deliveryFee = Number(payload.deliveryFee);
+    if (!Number.isInteger(deliveryFee) || deliveryFee < 0 || deliveryFee > 100000) {
+      throw new HttpError(400, "Delivery fee must be a whole amount from 0 to 100,000.");
+    }
+  }
 
   const customerId = crypto.randomUUID();
   const orderId = crypto.randomUUID();
@@ -329,13 +343,15 @@ const createOrder = async (payload = {}, context = {}) => {
       `INSERT INTO orders (
         id, customer_id, customer_account_id, notes, status, total, currency, delivery_fee, promotion_code, discount_amount,
         delivery_county, delivery_town, delivery_address, delivery_landmark,
-        preferred_delivery_date, preferred_delivery_time, mpesa_code, fulfillment, attribution, client_ip, meta_event_id
+        preferred_delivery_date, preferred_delivery_time, mpesa_code, fulfillment, attribution, client_ip, meta_event_id,
+        channel, recorded_by
       )
-       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19)`,
+       VALUES ($1, $2, $3, $4, 'pending', $5, 'KES', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19, $20, $21)`,
       [
         orderId, customerId, customerAccountId || null, notes, total, deliveryFee, promotion.code, promotion.discountAmount,
         delivery.county, delivery.town, delivery.address, delivery.landmark, delivery.preferredDate, delivery.preferredTime,
         mpesaCode, isPickup ? "pickup" : "delivery", JSON.stringify(attribution), ip, `purchase_${orderId}`,
+        channel, manual ? manual.adminId || null : null,
       ]
     );
 
@@ -527,6 +543,7 @@ const expireStalePendingOrders = async () => {
 };
 
 module.exports = {
+  SALE_CHANNELS,
   createOrder,
   expireStalePendingOrders,
   getOrderById,

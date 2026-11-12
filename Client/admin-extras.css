@@ -68,3 +68,11 @@
 @media (max-width: 640px) {
   .copy-row { flex-direction: column; }
 }
+
+/* Orders page: record a WhatsApp / phone sale */
+.manual-sale-summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.manual-sale-summary::-webkit-details-marker { display: none; }
+.manual-sale-summary::after { content: "+"; font-size: 22px; font-weight: 700; }
+details[open] > .manual-sale-summary::after { content: "−"; }
+.manual-sale-summary small { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+#manualSaleForm { margin-top: 18px; }

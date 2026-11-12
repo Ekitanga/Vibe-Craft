@@ -50,6 +50,7 @@ router.delete("/promotions/:id", can("promotions.manage"), promotionController.d
 // ---- Orders & payments ---------------------------------------------------------------
 // dashboard.view alone receives orders with customer details redacted.
 router.get("/orders", can("orders.view", "dashboard.view"), orderController.listOrders);
+router.post("/orders/manual", can("orders.manage"), orderController.recordManualSale);
 router.patch("/orders/:id/status", can("orders.manage"), orderController.updateOrderStatus);
 router.patch("/orders/:id/payment", can("payments.verify"), orderController.updatePaymentVerification);
 router.post("/orders/:id/mpesa-request", can("payments.verify"), orderController.requestMpesaPayment);

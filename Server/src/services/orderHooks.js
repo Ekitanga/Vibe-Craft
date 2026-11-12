@@ -21,7 +21,7 @@ const register = () => {
     }
 
     const mpesa = await integrationSettings.getConfig("mpesa");
-    if (mpesa.enabled && mpesa.autoPromptOnCheckout && !order.paymentVerified && context.baseUrl) {
+    if (mpesa.enabled && mpesa.autoPromptOnCheckout && order.channel === "website" && !order.paymentVerified && context.baseUrl) {
       await mpesaService.requestPayment({ orderId: order.id, phone: order.customer.phone, baseUrl: context.baseUrl });
     }
   });

@@ -11,6 +11,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+    <link rel="stylesheet" href="admin-extras.css?v=1" />
   </head>
   <body>
     <header class="site-header">
@@ -47,6 +48,47 @@
           <div><p class="eyebrow">Admin</p><h1>Orders</h1></div>
         </div>
 
+        <section class="admin-panel" id="manualSaleSection" hidden>
+          <details id="manualSaleDetails">
+            <summary class="manual-sale-summary"><span><strong>Record a WhatsApp / phone sale</strong><small>For sales closed outside the website. Updates stock and reports, and tells Meta about the sale.</small></span></summary>
+            <form id="manualSaleForm" novalidate>
+              <div class="form-grid">
+                <div class="field"><label for="saleChannel">Where was the sale made?</label>
+                  <select id="saleChannel" required><option value="whatsapp">WhatsApp</option><option value="phone">Phone call</option><option value="walk_in">Walk-in at the shop</option><option value="other">Other</option></select></div>
+                <div class="field"><label for="saleStatus">Order status</label>
+                  <select id="saleStatus"><option value="confirmed">Confirmed</option><option value="completed">Completed (delivered / collected)</option><option value="processing">Processing</option><option value="pending">Pending</option></select></div>
+                <div class="field"><label for="saleName">Customer name</label><input id="saleName" required minlength="2" maxlength="100" /></div>
+                <div class="field"><label for="salePhone">Customer phone</label><input id="salePhone" type="tel" required placeholder="0712 345 678" /><small>Used to match the sale to the person who saw your ad.</small></div>
+                <div class="field"><label for="saleEmail">Customer email <small>(optional)</small></label><input id="saleEmail" type="email" /></div>
+                <div class="field"><label for="saleFulfillment">Fulfilment</label>
+                  <select id="saleFulfillment"><option value="pickup">Collected at the shop</option><option value="delivery">Delivery</option></select></div>
+              </div>
+              <div class="form-grid" id="saleDeliveryFields" hidden>
+                <div class="field"><label for="saleCounty">County</label><input id="saleCounty" maxlength="60" /></div>
+                <div class="field"><label for="saleTown">Town / area</label><input id="saleTown" maxlength="120" /></div>
+                <div class="field"><label for="saleAddress">Address</label><input id="saleAddress" maxlength="300" /></div>
+                <div class="field"><label for="saleDeliveryFee">Delivery fee charged (KES)</label><input id="saleDeliveryFee" type="number" min="0" step="1" placeholder="Blank = standard county fee" /></div>
+              </div>
+              <h3 class="integration-group">Items</h3>
+              <div class="range-form">
+                <div class="field" style="flex:1 1 260px"><label for="saleProduct">Product</label><select id="saleProduct"><option value="">Loading products…</option></select></div>
+                <div class="field" style="max-width:110px"><label for="saleQty">Qty</label><input id="saleQty" type="number" min="1" max="50" step="1" value="1" /></div>
+                <button class="button button-outline auth-submit" type="button" id="saleAddItem">Add item</button>
+              </div>
+              <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Product</th><th>Qty</th><th>Line total</th><th></th></tr></thead><tbody id="saleItems"><tr class="empty-row"><td colspan="4">No items yet.</td></tr></tbody></table></div>
+              <h3 class="integration-group">Payment & ad tracking</h3>
+              <div class="form-grid">
+                <div class="field"><label for="saleMpesa">M-Pesa code <small>(optional)</small></label><input id="saleMpesa" maxlength="12" /></div>
+                <div class="field field-wide"><label class="field-checkbox"><input id="salePaid" type="checkbox" /> Payment received</label></div>
+                <div class="field field-wide"><label class="field-checkbox"><input id="saleFromAd" type="checkbox" /> The customer came from a Facebook or Instagram ad</label></div>
+                <div class="field"><label for="saleCampaign">Campaign or ad name <small>(optional)</small></label><input id="saleCampaign" maxlength="150" placeholder="e.g. december-sale" /></div>
+                <div class="field field-wide"><label for="saleNotes">Notes <small>(optional)</small></label><textarea id="saleNotes" maxlength="1000" rows="2"></textarea></div>
+              </div>
+              <div class="panel-actions"><button class="button button-dark auth-submit" type="submit">Record sale <span id="saleTotal"></span></button><p class="form-status" id="saleStatusMessage" role="status" aria-live="polite"></p></div>
+            </form>
+          </details>
+        </section>
+
         <section class="admin-panel">
           <div class="admin-panel-heading">
             <h2>All orders</h2>
@@ -78,6 +120,7 @@
     <script src="api.js"></script>
     <script src="app.js?v=admin-no-theme-1"></script>
     <script src="admin.js?v=sec-meta-1"></script>
-    <script src="admin-orders.js?v=sec-meta-1"></script>
+    <script src="admin-orders.js?v=sales-1"></script>
+    <script src="admin-manual-sale.js?v=1"></script>
   </body>
 </html>

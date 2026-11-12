@@ -139,24 +139,28 @@ const orderContents = (order) =>
 
 const purchaseEventId = (orderId) => `purchase_${orderId}`;
 
+// Meta's action_source for where a sale happened.
+const ACTION_SOURCES = { website: "website", whatsapp: "chat", phone: "phone_call", walk_in: "physical_store", other: "other" };
+
 // Sends the Purchase event for an order exactly once.
 const sendPurchaseForOrder = async (order, { eventSourceUrl } = {}) => {
   const meta = await getMeta();
   if (!meta.capiEnabled) return { sent: false, reason: "disabled" };
 
   const claim = await db.query(
-    "UPDATE orders SET meta_purchase_sent_at = NOW() WHERE id = $1 AND meta_purchase_sent_at IS NULL RETURNING attribution, client_ip, created_at",
+    "UPDATE orders SET meta_purchase_sent_at = NOW() WHERE id = $1 AND meta_purchase_sent_at IS NULL RETURNING attribution, client_ip, created_at, channel",
     [order.id]
   );
   if (!claim.rows[0]) return { sent: false, reason: "already sent" };
 
   const attribution = claim.rows[0].attribution || {};
+  const isWebsite = (claim.rows[0].channel || "website") === "website";
   const event = {
     event_name: "Purchase",
     event_time: Math.floor(Date.now() / 1000),
     event_id: purchaseEventId(order.id),
-    action_source: "website",
-    event_source_url: eventSourceUrl || attribution.checkoutUrl || undefined,
+    action_source: ACTION_SOURCES[claim.rows[0].channel] || "website",
+    event_source_url: isWebsite ? eventSourceUrl || attribution.checkoutUrl || undefined : undefined,
     user_data: buildUserData({
       email: order.customer && order.customer.email,
       phone: order.customer && order.customer.phone,

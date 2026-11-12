@@ -17,10 +17,13 @@ const referrerHost = (referrer) => {
 };
 
 // Classifies an order by its last marketing touch (falls back to first touch).
-const channelFor = (attribution) => {
+const OFFLINE_LABELS = { whatsapp: "WhatsApp sales", phone: "Phone sales", walk_in: "Walk-in sales", other: "Other offline sales" };
+
+const channelFor = (attribution, saleChannel = "website") => {
   const touch = (attribution && (attribution.last || attribution.first)) || {};
   const source = String(touch.utm_source || "").toLowerCase();
   if (touch.fbclid || (attribution && attribution.fbclid) || META_SOURCES.has(source)) return "Meta ads";
+  if (saleChannel && saleChannel !== "website") return OFFLINE_LABELS[saleChannel] || "Offline sales";
   if (source) return source.charAt(0).toUpperCase() + source.slice(1);
   const host = referrerHost(touch.referrer);
   if (/facebook\.com|instagram\.com|fb\.com/.test(host)) return "Meta (organic)";
@@ -53,7 +56,7 @@ const report = async ({ since, until } = {}) => {
   if (sinceDay > untilDay) throw new HttpError(400, "The start date must be before the end date.");
 
   const result = await db.query(
-    `SELECT id, total, payment_verified, status, promotion_code, attribution, created_at
+    `SELECT id, total, payment_verified, status, promotion_code, attribution, channel, created_at
      FROM orders
      WHERE created_at >= $1::date AND created_at < ($2::date + INTERVAL '1 day') AND status <> 'cancelled'`,
     [sinceDay, untilDay]
@@ -66,7 +69,7 @@ const report = async ({ since, until } = {}) => {
 
   result.rows.forEach((order) => {
     totalRevenue += Number(order.total || 0);
-    const channel = channelFor(order.attribution);
+    const channel = channelFor(order.attribution, order.channel);
     addTo(channels, channel, order);
     const touch = (order.attribution && (order.attribution.last || order.attribution.first)) || {};
     if (touch.utm_campaign) addTo(campaigns, `${channel} · ${touch.utm_campaign}`, order);
