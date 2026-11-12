@@ -9,9 +9,13 @@ Render, Google, Meta). Everything else is typed into the server over SSH.
 
 ## What you need
 
-* A Contabo VPS with **Ubuntu 24.04** (22.04 works, see step 4 note), at least 2 GB RAM.
-  If the server already hosts other websites, tell your developer first — the setup
-  replaces nginx's *default* site and turns on the firewall (SSH, HTTP, HTTPS only).
+* A Contabo VPS with **Ubuntu 22.04 or 24.04** and about 1 GB of RAM to spare.
+* **The server can already run other systems.** The setup is built for shared servers:
+  it uses its own copy of Node.js, picks a free port, adds one nginx site for the
+  domain, and does not touch other sites, other databases, the firewall or system
+  packages your other systems rely on. It requires **nginx** to be the program serving
+  ports 80/443; if Apache, Caddy or a Docker proxy does that, it stops without changing
+  anything and tells you.
 * The server's **IP address** and **root password / SSH key** (Contabo customer panel → VPS).
 * Access to **Namecheap** (where vibecraft254.com is registered) and to **Render**.
 * The code pushed to GitHub and merged into `main`.
@@ -31,17 +35,31 @@ adduser vcadmin && usermod -aG sudo vcadmin
 # then log out and back in as: ssh vcadmin@YOUR.SERVER.IP
 ```
 
-## 2. Run the setup script
+## 2. Check the server, then run the setup
+
+First an inspection that **changes nothing** — send its output to your developer:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git
 git clone --branch main https://github.com/Mutisyaaa/Vibecraft.git ~/vibecraft-kit
+sudo bash ~/vibecraft-kit/deploy/contabo/setup.sh --check
+```
+
+It lists what serves ports 80/443, the domains nginx already hosts, Docker containers,
+PostgreSQL and the free port the store will use. Then install:
+
+```bash
 sudo bash ~/vibecraft-kit/deploy/contabo/setup.sh vibecraft254.com you@yourmail.com
 ```
 
-It installs everything, creates the database with a random password, generates the
-encryption key, and installs the service, nginx site, firewall and nightly backups.
+It installs only what is missing, a private Node.js in `/opt/vibecraft-node`, the code in
+`/opt/vibecraft`, a `vibecraft` database (with its own user and random password) in the
+existing PostgreSQL, the settings file, the `vibecraft` service, one nginx site and
+nightly backups. If nginx rejects the new site, it is switched off again automatically.
 It is safe to run again.
+
+*Firewall:* the setup leaves your firewall alone. Ports 80 and 443 must be open (they
+already are if the server hosts other websites). The store itself listens on
+`127.0.0.1` only, so it is never reachable directly from the internet.
 
 ## 3. Fill in the secrets
 
@@ -87,7 +105,7 @@ then create the owner with `npm run admin:create -- --email … --password …` 
 ```bash
 sudo systemctl start vibecraft
 sudo systemctl status vibecraft --no-pager       # should say "active (running)"
-curl -s http://127.0.0.1:5000/api/health        # {"success":true,...}
+curl -s http://127.0.0.1:$(sudo grep -oP '^PORT=\K.*' /etc/vibecraft/vibecraft.env)/api/health   # {"success":true,...}
 sudo journalctl -u vibecraft -n 50 --no-pager   # logs (migrations are applied on first start)
 ```
 
@@ -156,5 +174,5 @@ sudo nginx -t && sudo systemctl reload nginx
 | Edit settings | `sudo nano /etc/vibecraft/vibecraft.env` then restart |
 | Locked-out owner | `sudo -u vibecraft bash -c 'cd /opt/vibecraft/Server && set -a && . /etc/vibecraft/vibecraft.env && npm run admin:create -- --email you@x.com --password "NEW-long-password" --reset'` |
 
-Security updates install automatically (unattended-upgrades). Reboot monthly or when
-`/var/run/reboot-required` exists: `sudo reboot` (the store starts again by itself).
+Keep the server's packages updated as you do for your other systems. After a reboot the
+store starts again by itself.
