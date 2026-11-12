@@ -1,0 +1,8 @@
+
+vibecraft254.com, www.vibecraft254.com {
+	encode zstd gzip
+	request_body {
+		max_size 90MB
+	}
+	reverse_proxy vibecraft-app:5000
+}

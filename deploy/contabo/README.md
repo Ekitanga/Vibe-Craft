@@ -1,5 +1,8 @@
 # Hosting Vibecraft on a Contabo VPS
 
+> **For the Contabo server at 169.58.30.49:** it runs Docker + Caddy (not nginx), so use
+> [deploy/docker/README.md](../docker/README.md). This guide is for plain nginx servers.
+
 This moves the store from Render to your own Contabo server: Node.js app + PostgreSQL
 database + nginx web server + free HTTPS certificate, on one machine. Expect about
 1–2 hours the first time, with roughly 15 minutes when the site is switching over.

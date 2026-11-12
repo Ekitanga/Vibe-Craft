@@ -1,0 +1,73 @@
+# Vibecraft on a Docker server that already runs other apps behind a shared Caddy proxy.
+#
+#   cd /opt/vibecraft/deploy/docker && docker compose up -d --build
+#
+# * The database is private to this project (only "vibecraft-app" can reach it).
+# * The app joins the proxy network (default: contabo_default) under the unique
+#   alias "vibecraft-app", so Caddy can route vibecraft254.com to it.
+# * Every service/alias name is unique: other projects on the shared network use
+#   generic names like "db", which must never be confused with this database.
+name: vibecraft
+
+services:
+  vibecraft-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vibecraft
+      POSTGRES_USER: vibecraft
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - vibecraft_pg:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecraft -d vibecraft"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  vibecraft-app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: vibecraft-app:latest
+    restart: unless-stopped
+    init: true
+    depends_on:
+      vibecraft-db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 5000
+      # Caddy is the single proxy in front of the app.
+      TRUST_PROXY: 1
+      DATABASE_URL: postgres://vibecraft:${DB_PASSWORD}@vibecraft-db:5432/vibecraft
+      PGSSL: "false"
+    # Reachable from the server itself for checks (curl 127.0.0.1:4200), never from outside.
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-4200}:5000"
+    networks:
+      internal: {}
+      proxy:
+        aliases:
+          - vibecraft-app
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  internal:
+    name: vibecraft-internal
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-contabo_default}
+
+volumes:
+  vibecraft_pg:
+    name: vibecraft_pg
