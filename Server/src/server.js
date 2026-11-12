@@ -13,8 +13,8 @@ const startServer = async () => {
     console.warn("SETTINGS_ENCRYPTION_KEY is not set: integration secrets use a database-stored key. Set it for stronger protection.");
   }
 
-  const server = app.listen(env.port, "0.0.0.0", () => {
-    console.log(`Vibecraft API listening on port ${env.port} using Gemini model ${env.geminiModel}`);
+  const server = app.listen(env.port, env.host, () => {
+    console.log(`Vibecraft API listening on ${env.host}:${env.port} using Gemini model ${env.geminiModel}`);
   });
 
   if (env.backgroundJobs) jobs.start();

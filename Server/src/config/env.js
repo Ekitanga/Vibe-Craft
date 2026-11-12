@@ -19,6 +19,10 @@ const env = {
   isProduction: nodeEnv === "production",
   isTest: nodeEnv === "test",
   port: Number(process.env.PORT) || 5000,
+  // 0.0.0.0 for Render; 127.0.0.1 on a VPS where nginx is the only public entry point.
+  host: process.env.HOST || "0.0.0.0",
+  // Number of reverse proxies in front of the app (nginx = 1). Used to find the visitor's IP.
+  trustProxy: process.env.TRUST_PROXY === undefined ? 1 : Number(process.env.TRUST_PROXY),
   // Comma-separated list. The first entry is treated as the canonical public origin.
   clientOrigins: list(process.env.CLIENT_ORIGIN || "http://localhost:5173"),
   get clientOrigin() {

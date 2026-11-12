@@ -33,7 +33,7 @@ const clientPath = path.join(__dirname, "../../Client");
 
 // Render (and Cloudflare in front of it) terminate TLS at a proxy. Trust exactly one
 // hop so req.ip is the visitor's address for rate limiting.
-app.set("trust proxy", 1);
+app.set("trust proxy", Number.isInteger(env.trustProxy) ? env.trustProxy : 1);
 app.disable("x-powered-by");
 
 // Never write secrets that travel in URLs (verification tokens, feed keys) to logs.

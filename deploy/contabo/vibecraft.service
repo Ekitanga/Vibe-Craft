@@ -1,0 +1,37 @@
+[Unit]
+Description=Vibecraft store (Node.js)
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=vibecraft
+Group=vibecraft
+WorkingDirectory=/opt/vibecraft/Server
+EnvironmentFile=/etc/vibecraft/vibecraft.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+# Give in-flight requests time to finish on restart.
+TimeoutStopSec=20
+KillSignal=SIGTERM
+
+# Sandboxing: the app can only write to its temp dir (video uploads stream there).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/vibecraft/Server/uploads
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryMax=1G
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
