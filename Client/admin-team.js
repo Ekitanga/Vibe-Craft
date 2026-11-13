@@ -166,7 +166,7 @@
       if (!window.confirm(self ? "Sign out all your sessions, including this one?" : "Sign " + label + " out of every device?")) return null;
       await window.VibecraftApi.post("admin/admins/" + encodeURIComponent(admin.id) + "/revoke-sessions");
       if (self) {
-        window.location.href = "/login";
+        window.location.href = (window.VIBECRAFT_ADMIN_LOGIN && window.VIBECRAFT_ADMIN_LOGIN.path) || "/login";
         return null;
       }
       return label + " was signed out everywhere.";

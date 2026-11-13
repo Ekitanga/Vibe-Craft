@@ -46,6 +46,8 @@ const env = {
   adminEmail: process.env.ADMIN_EMAIL || "",
   adminPassword: process.env.ADMIN_PASSWORD || "",
   adminName: process.env.ADMIN_NAME || "Vibecraft Admin",
+  // Break-glass override for the private admin sign-in address (Admin → Integrations → Security).
+  adminLoginPath: (process.env.ADMIN_LOGIN_PATH || "").trim().replace(/^\/+|\/+$/g, "").toLowerCase(),
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   // Use the lighter model by default. The `gemini-flash-latest` alias currently

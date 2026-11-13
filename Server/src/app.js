@@ -17,6 +17,7 @@ const webhookRoutes = require("./routes/webhookRoutes");
 const marketingController = require("./controllers/marketingController");
 const adminAuthService = require("./services/adminAuthService");
 const pageRenderer = require("./services/pageRenderer");
+const adminLoginPath = require("./services/adminLoginPath");
 const orderHooks = require("./services/orderHooks");
 const asyncHandler = require("./utils/asyncHandler");
 const { adminSessionCookieName } = require("./middleware/adminAuth");
@@ -112,20 +113,31 @@ const adminPageGuard = async (req, res, next) => {
   try {
     const admin = await adminAuthService.getAdminBySessionToken(getCookie(req, adminSessionCookieName));
     if (!admin) {
+      // With a private sign-in address, admin pages simply do not exist for visitors.
+      if (await adminLoginPath.get()) return notFound(req, res, next);
       const nextPath = req.originalUrl || "/admin";
       return res.redirect("/login?next=" + encodeURIComponent(nextPath));
     }
     req.admin = admin;
+    res.locals.adminLoginPath = await adminLoginPath.get();
     return next();
   } catch (error) {
     return next(error);
   }
 };
 
+// The private admin sign-in page (Admin → Integrations → Security → Private admin sign-in address).
+app.get("/:slug", asyncHandler(async (req, res, next) => {
+  if (req.params.slug.includes(".")) return next(); // static files
+  const slug = await adminLoginPath.get();
+  if (!slug || req.params.slug.toLowerCase() !== slug) return next();
+  return pageRenderer.renderPage(req, res, "login.html", { adminLogin: true, loginPath: slug });
+}));
+
 Object.entries(pageFiles).forEach(([pageName, fileName]) => {
   const routePath = pageName === "index" ? "/" : "/" + pageName;
   if (isAdminPage(pageName)) {
-    app.get(routePath, adminPageGuard, asyncHandler((req, res) => pageRenderer.renderPage(req, res, fileName, { admin: true })));
+    app.get(routePath, adminPageGuard, asyncHandler((req, res) => pageRenderer.renderPage(req, res, fileName, { admin: true, loginPath: res.locals.adminLoginPath })));
   } else {
     app.get(routePath, attachCustomerIfPresent, asyncHandler((req, res) => pageRenderer.renderPage(req, res, fileName)));
   }

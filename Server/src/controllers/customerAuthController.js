@@ -1,5 +1,6 @@
 const customerAuthService = require("../services/customerAuthService");
 const adminAuthService = require("../services/adminAuthService");
+const adminLoginPath = require("../services/adminLoginPath");
 const auditService = require("../services/auditService");
 const emailService = require("../services/emailService");
 const loginGuard = require("../services/loginGuard");
@@ -86,7 +87,10 @@ const login = asyncHandler(async (req, res) => {
   await loginGuard.assertAllowed({ email: payload.email, ip: req.ip });
 
   const customerSession = await tryLogin(() => customerAuthService.authenticateCustomer(payload));
-  const adminSession = await tryLogin(() => adminAuthService.authenticateAdmin(payload, { ip: req.ip, userAgent: req.get("user-agent") }));
+  // Admins sign in here only when no private admin sign-in address is configured.
+  const adminSession = (await adminLoginPath.get())
+    ? null
+    : await tryLogin(() => adminAuthService.authenticateAdmin(payload, { ip: req.ip, userAgent: req.get("user-agent") }));
 
   if (!customerSession && !adminSession) {
     await loginGuard.recordFailure({ email: payload.email });

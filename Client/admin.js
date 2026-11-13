@@ -5,8 +5,14 @@
     return window.location.pathname === "/" ? "/admin" : window.location.pathname;
   }
 
+  // The admin sign-in address (private when configured in Integrations → Security).
+  function adminLoginPath() {
+    var config = window.VIBECRAFT_ADMIN_LOGIN;
+    return config && config.path ? config.path : "/login";
+  }
+
   function loginUrl() {
-    return "/login?next=" + encodeURIComponent(currentPage());
+    return adminLoginPath() + "?next=" + encodeURIComponent(currentPage());
   }
 
   async function requireSession() {
@@ -71,7 +77,7 @@
       try {
         await window.VibecraftApi.post("admin/auth/logout");
       } finally {
-      window.location.href = "/login";
+      window.location.href = adminLoginPath();
       }
     });
   }

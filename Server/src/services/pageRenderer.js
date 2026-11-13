@@ -147,10 +147,20 @@ const sendHtml = (res, html) => {
   res.send(html);
 };
 
-const renderPage = async (req, res, fileName, { admin = false } = {}) => {
+// adminLogin: the sign-in page served at the private admin address (no storefront
+// tracking, never indexed). loginPath: where admin pages send a signed-out admin.
+const renderPage = async (req, res, fileName, { admin = false, adminLogin = false, loginPath = "" } = {}) => {
   const nonce = res.locals.cspNonce || "";
   let html = await readClientFile(fileName);
-  if (!admin) {
+  if (adminLogin) {
+    const config = scriptJson({ loginPage: true, path: "/" + loginPath });
+    html = html.replace(/<\/head>/i, `    <meta name="robots" content="noindex, nofollow">\n    <script nonce="${nonce}">window.VIBECRAFT_ADMIN_LOGIN=${config};</script>\n  </head>`);
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+  } else if (admin) {
+    const config = scriptJson({ path: loginPath ? "/" + loginPath : "/login" });
+    html = html.replace(/<\/head>/i, `    <script nonce="${nonce}">window.VIBECRAFT_ADMIN_LOGIN=${config};</script>\n  </head>`);
+  }
+  if (!admin && !adminLogin) {
     const head = await storefrontHead(req, html, nonce);
     html = html.replace(/<\/head>/i, `    ${head}\n  </head>`);
   }

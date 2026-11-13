@@ -1,4 +1,6 @@
 const adminAuthService = require("../services/adminAuthService");
+const adminLoginPath = require("../services/adminLoginPath");
+const HttpError = require("../utils/httpError");
 const auditService = require("../services/auditService");
 const loginGuard = require("../services/loginGuard");
 const asyncHandler = require("../utils/asyncHandler");
@@ -9,6 +11,12 @@ const requestContext = (req) => ({ ip: req.ip, userAgent: req.get("user-agent") 
 
 const login = asyncHandler(async (req, res) => {
   const payload = req.body || {};
+  // With a private sign-in address, this endpoint looks like it does not exist unless the
+  // request comes from that page.
+  const slug = await adminLoginPath.get();
+  if (slug && adminLoginPath.normalize(payload.loginPath) !== slug) {
+    throw new HttpError(404, `Route not found: ${req.method} ${req.originalUrl}`);
+  }
   await loginGuard.assertAllowed({ email: payload.email, ip: req.ip });
   let session;
   try {

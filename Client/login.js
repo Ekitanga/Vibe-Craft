@@ -6,6 +6,9 @@
 
   if (!form) return;
 
+  // Set by the server only on the private admin sign-in page.
+  var adminLogin = window.VIBECRAFT_ADMIN_LOGIN && window.VIBECRAFT_ADMIN_LOGIN.loginPage ? window.VIBECRAFT_ADMIN_LOGIN : null;
+
   function setStatus(message, isError) {
     status.textContent = message || "";
     status.classList.toggle("is-error", Boolean(isError));
@@ -19,10 +22,9 @@
     submitButton.disabled = true;
 
     try {
-      var payload = await window.VibecraftApi.post("auth/login", {
-        email: form.email.value.trim(),
-        password: form.password.value,
-      });
+      var credentials = { email: form.email.value.trim(), password: form.password.value };
+      if (adminLogin) credentials.loginPath = adminLogin.path;
+      var payload = await window.VibecraftApi.post(adminLogin ? "admin/auth/login" : "auth/login", credentials);
 
       if (payload.data && payload.data.user) {
         window.location.href = window.VibecraftApi.safeNext("index.html");

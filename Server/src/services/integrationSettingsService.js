@@ -91,6 +91,7 @@ const SECTIONS = [
       { key: "loginWindowMinutes", group: "Sign-in", label: "Sign-in lockout window (minutes)", type: "number", default: 15, min: 1, max: 1440 },
       { key: "adminPasswordMinLength", group: "Sign-in", label: "Minimum admin password length", type: "number", default: 10, min: 8, max: 64 },
       { key: "customerPasswordMinLength", group: "Sign-in", label: "Minimum customer password length", type: "number", default: 8, min: 8, max: 64 },
+      { key: "adminLoginPath", group: "Sign-in", label: "Private admin sign-in address", type: "text", default: "", pattern: "^[a-z0-9][a-z0-9-]{7,63}$", placeholder: "staff-entry-7k2q", help: "When set, admins sign in only at <your site>/<this value> and the public /login page is for customers only; admin pages show \"not found\" to anyone not signed in. 8–64 lowercase letters, digits or dashes; must not start with \"admin\". Leave blank to use /login. Write it down — if lost, set ADMIN_LOGIN_PATH on the server to override it." },
       { key: "adminSessionHours", group: "Sign-in", label: "Admin session length (hours)", type: "number", default: 72, min: 1, max: 720 },
       { key: "signupsPerHourPerIp", group: "Accounts", label: "New accounts per hour per IP", type: "number", default: 10, min: 0, max: 1000 },
       { key: "ordersPerHourPerIp", group: "Orders", label: "Orders per hour per IP", type: "number", default: 8, min: 0, max: 1000 },
