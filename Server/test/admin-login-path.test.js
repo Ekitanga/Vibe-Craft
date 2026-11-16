@@ -25,7 +25,7 @@ test("without a private address, admins use /login as before", async () => {
 });
 
 test("invalid or reserved addresses are refused by the settings form", async () => {
-  await assert.rejects(h.integrationSettings.update("security", { values: { adminLoginPath: "short" } }));
+  await assert.rejects(h.integrationSettings.update("security", { values: { adminLoginPath: "abc" } }));
   await assert.rejects(h.integrationSettings.update("security", { values: { adminLoginPath: "Has Spaces!" } }));
 });
 

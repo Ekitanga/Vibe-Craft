@@ -7,7 +7,7 @@
 const env = require("../config/env");
 const integrationSettings = require("./integrationSettingsService");
 
-const VALID = /^[a-z0-9][a-z0-9-]{7,63}$/;
+const VALID = /^[a-z0-9][a-z0-9-]{3,63}$/;
 // Never shadow a real page, API or asset route.
 const RESERVED = /^(admin|login|signup|account|cart|product|find-your-setup|privacy|terms|refunds|api|feeds|uploads|assets|robots|sitemap|webhooks?)(-|$)/;
 
