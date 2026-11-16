@@ -98,7 +98,7 @@ const report = async ({ since, until } = {}) => {
       revenue: metaRevenue,
       paidRevenue: metaPaidRevenue,
       spend: insights.spend || 0,
-      roas: insights.spend ? Number((metaRevenue / insights.spend).toFixed(2)) : null,
+      roas: insights.spend && !insights.needsExchangeRate ? Number((metaRevenue / insights.spend).toFixed(2)) : null,
       insights,
     },
   };

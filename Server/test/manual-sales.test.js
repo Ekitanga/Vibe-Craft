@@ -102,3 +102,26 @@ test("bad input is rejected", async () => {
   assert.equal((await manager.post("/api/admin/orders/manual", sale({ status: "cancelled" }))).status, 400);
   assert.equal((await manager.post("/api/admin/orders/manual", sale({ fulfillment: "delivery", deliveryFee: -5 }))).status, 400);
 });
+
+test("ad spend in another currency is converted to KES before ROAS is calculated", async () => {
+  const usdInsights = (call) => {
+    if (/level=account/.test(call.url)) return { body: { data: [{ spend: "10.00", impressions: "1000", clicks: "20", account_currency: "USD" }] } };
+    if (/level=campaign/.test(call.url)) return { body: { data: [{ campaign_id: "1", campaign_name: "Launch", spend: "10.00", impressions: "1000", clicks: "20" }] } };
+    return { body: {} };
+  };
+  h.setExternalHandler(usdInsights);
+  await h.integrationSettings.update("meta", { values: { adAccountId: "act_123456789", marketingAccessToken: "EAAG-ads", adSpendExchangeRate: "" } });
+
+  let result = await marketingService.report({});
+  assert.equal(result.meta.insights.needsExchangeRate, true);
+  assert.equal(result.meta.roas, null, "no ROAS when USD spend cannot be converted");
+
+  await assert.rejects(h.integrationSettings.update("meta", { values: { adSpendExchangeRate: "12x5" } }));
+  await h.integrationSettings.update("meta", { values: { adSpendExchangeRate: "130" } });
+  result = await marketingService.report({});
+  assert.equal(result.meta.spend, 1300, "USD 10 at 130 = KES 1,300");
+  assert.equal(result.meta.insights.accountSpend, 10);
+  assert.equal(result.meta.insights.campaigns[0].spend, 1300);
+  assert.equal(result.meta.insights.accountCurrency, "USD");
+  await h.integrationSettings.update("meta", { values: { adAccountId: "", adSpendExchangeRate: "" } });
+});

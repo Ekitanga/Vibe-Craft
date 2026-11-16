@@ -36,6 +36,7 @@ const SECTIONS = [
       { key: "catalogFeedEnabled", group: "Domain & catalog", label: "Publish product catalog feed", type: "boolean", default: true, help: "Feed URLs are shown on the Marketing page. Add one as a scheduled data feed in Commerce Manager." },
       { key: "catalogFeedToken", group: "Domain & catalog", label: "Feed access key", type: "text", default: "", help: "Optional. When set, the feed URL must include ?key=<this value>." },
       { key: "adAccountId", group: "Reporting", label: "Ad account ID", type: "text", default: "", pattern: "^(act_)?[0-9]{5,20}$", placeholder: "act_1234567890", help: "Used to show ad spend and return on ad spend on the Marketing page." },
+      { key: "adSpendExchangeRate", group: "Reporting", label: "Exchange rate: 1 unit of ad account currency in KES", type: "text", default: "", pattern: "^[0-9]{1,6}(\\.[0-9]{1,4})?$", placeholder: "129.5", help: "Only needed when the ad account is not billed in KES (e.g. USD). Ad spend is converted with this rate so return on ad spend compares like with like. Update it now and then." },
       { key: "marketingAccessToken", group: "Reporting", label: "Marketing API access token", type: "secret", help: "A System User token with ads_read (and leads_retrieval for Lead Ads)." },
       { key: "leadAdsEnabled", group: "Lead Ads", label: "Receive Lead Ads leads", type: "boolean", default: false },
       { key: "appSecret", group: "Lead Ads", label: "Meta app secret", type: "secret", help: "Used to verify that webhook calls really come from Meta." },

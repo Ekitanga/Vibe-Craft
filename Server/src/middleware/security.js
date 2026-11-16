@@ -35,6 +35,7 @@ const BASE_SOURCES = {
   style: ["https://accounts.google.com/gsi/style"],
   connect: ["https://www.facebook.com", "https://*.facebook.com", "https://connect.facebook.net", "https://accounts.google.com"],
   frame: ["https://accounts.google.com", "https://www.facebook.com", "https://*.facebook.com"],
+  form: ["https://www.facebook.com"],
 };
 
 const buildCsp = (nonce, extra = []) => {
@@ -53,7 +54,9 @@ const buildCsp = (nonce, extra = []) => {
     `frame-src ${[...BASE_SOURCES.frame, ...extras].join(" ")}`,
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    // Meta's Pixel posts larger events (AddToCart, Purchase with contents) through a
+    // hidden form to facebook.com/tr; blocking that silently drops those events.
+    `form-action 'self' ${BASE_SOURCES.form.join(" ")}`,
     "frame-ancestors 'none'",
   ];
   if (env.isProduction) directives.push("upgrade-insecure-requests");

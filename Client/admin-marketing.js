@@ -78,6 +78,10 @@
       notice.textContent = "Meta returned an error: " + insights.error;
       notice.classList.add("is-warning");
       notice.hidden = false;
+    } else if (insights.needsExchangeRate) {
+      notice.textContent = "Your ad account is billed in " + insights.accountCurrency + ". Set the exchange rate in Integrations → Meta → Reporting to see spend in KES and return on ad spend.";
+      notice.classList.add("is-warning");
+      notice.hidden = false;
     } else {
       notice.hidden = true;
     }

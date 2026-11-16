@@ -15,6 +15,7 @@ test("pages carry security headers and a nonce on every script", async () => {
   const nonce = csp.match(/'nonce-([^']+)'/)[1];
   assert.match(csp, /frame-ancestors 'none'/);
   assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /form-action 'self' https:\/\/www\.facebook\.com/, "Pixel's form fallback must be allowed");
   const scripts = home.text.match(/<script[^>]*>/g);
   assert.ok(scripts.length > 3);
   assert.ok(scripts.every((tag) => tag.includes(`nonce="${nonce}"`)));

@@ -321,6 +321,14 @@ const recentEvents = async (limit = 50) => {
 };
 
 // ---- Marketing API: ad spend ---------------------------------------------------
+// Insights rows omit account_currency when there is no spend in the period.
+const accountCurrencyFor = async (meta, account) => {
+  const result = await graphFetch(
+    `${GRAPH}/${meta.graphApiVersion}/${account}?fields=currency&access_token=${encodeURIComponent(meta.marketingAccessToken)}`
+  ).catch(() => null);
+  return result && result.ok ? result.body.currency : null;
+};
+
 const fetchInsights = async ({ since, until }) => {
   const meta = await getMeta();
   if (!meta.adAccountId || !meta.marketingAccessToken) return { configured: false };
@@ -335,10 +343,19 @@ const fetchInsights = async ({ since, until }) => {
   if (!totals.ok) return { configured: true, error: graphError(totals) };
 
   const row = (totals.body.data && totals.body.data[0]) || {};
+  // Revenue is in KES; spend is in the ad account's currency. Convert before comparing.
+  const accountCurrency = row.account_currency || (await accountCurrencyFor(meta, account)) || "KES";
+  const rate = accountCurrency === "KES" ? 1 : Number(meta.adSpendExchangeRate) || 0;
+  const toKes = (value) => (rate ? Math.round(Number(value || 0) * rate * 100) / 100 : 0);
   return {
     configured: true,
-    currency: row.account_currency || "KES",
-    spend: Number(row.spend || 0),
+    currency: "KES",
+    accountCurrency,
+    exchangeRate: rate || null,
+    // Without a rate, spend cannot be shown in KES (and ROAS is withheld).
+    needsExchangeRate: !rate,
+    accountSpend: Number(row.spend || 0),
+    spend: toKes(row.spend),
     impressions: Number(row.impressions || 0),
     clicks: Number(row.clicks || 0),
     reach: Number(row.reach || 0),
@@ -346,7 +363,8 @@ const fetchInsights = async ({ since, until }) => {
       ? (campaigns.body.data || []).map((item) => ({
           id: item.campaign_id,
           name: item.campaign_name,
-          spend: Number(item.spend || 0),
+          spend: toKes(item.spend),
+          accountSpend: Number(item.spend || 0),
           impressions: Number(item.impressions || 0),
           clicks: Number(item.clicks || 0),
         }))
