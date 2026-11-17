@@ -7,6 +7,8 @@
   var maxQty = 99;
 
   function getProductId() {
+    var match = window.location.pathname.match(/^\/products\/([^\/]+)/);
+    if (match) return decodeURIComponent(match[1]);
     return new URLSearchParams(window.location.search).get("id");
   }
 
@@ -195,7 +197,7 @@
       : "";
 
     return [
-      '<a class="product-card showcase-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
+      '<a class="product-card showcase-card" href="' + window.VibecraftApi.productUrl(product) + '">',
       '<div class="product-card-media">',
       imageMarkup,
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",
@@ -404,7 +406,7 @@
     }
 
     try {
-      var payload = await window.VibecraftApi.get("products/" + id);
+      var payload = await window.VibecraftApi.get("products/" + encodeURIComponent(id));
       var product = payload.data;
 
       document.title = "Vibecraft — " + product.name;

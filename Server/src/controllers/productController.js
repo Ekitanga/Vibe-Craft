@@ -3,7 +3,7 @@ const productService = require("../services/productService");
 const auditService = require("../services/auditService");
 
 const listProducts = asyncHandler(async (req, res) => {
-  const products = await productService.listProducts(req.query);
+  const products = (await productService.listProducts(req.query)).map(productService.toPublicProduct);
 
   res.json({
     success: true,
@@ -13,11 +13,11 @@ const listProducts = asyncHandler(async (req, res) => {
 });
 
 const getProduct = asyncHandler(async (req, res) => {
-  const product = await productService.getProductById(req.params.id);
+  const product = await productService.getProductByIdOrSlug(req.params.id);
 
   res.json({
     success: true,
-    data: product,
+    data: productService.toPublicProduct(product),
   });
 });
 

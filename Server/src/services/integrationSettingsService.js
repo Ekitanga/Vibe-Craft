@@ -115,7 +115,7 @@ const SECTIONS = [
       { key: "defaultImageUrl", label: "Default share image", type: "url", default: "", help: "Leave blank to use the store photo. Products use their own first image." },
       { key: "defaultDescription", label: "Default share description", type: "textarea", default: "Projectors, screens and setups for movie nights, gaming and presentations. Delivered across Kenya.", maxLength: 300 },
       { key: "sitemapEnabled", label: "Publish sitemap.xml", type: "boolean", default: true },
-      { key: "robotsDisallow", label: "Hide from search engines", type: "list", default: ["/admin", "/api/", "/account", "/cart", "/login", "/signup"] },
+      { key: "robotsDisallow", label: "Hide from search engines", type: "list", default: ["/api/", "/account", "/cart", "/login", "/signup"], help: "Paths listed here are public in robots.txt — never list the admin area or the private admin sign-in address. Admin pages are already hidden from search engines." },
     ],
   },
   {

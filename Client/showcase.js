@@ -152,7 +152,7 @@
   }
 
   function whatsappUrl(product) {
-    var productUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
+    var productUrl = new URL(window.VibecraftApi.productUrl(product), window.location.origin).href;
     var message = "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + productUrl;
     return window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(message) : "https://wa.me/254707472897?text=" + encodeURIComponent(message);
   }
@@ -172,7 +172,7 @@
     var isWishlisted = window.VibecraftWishlist && window.VibecraftWishlist.has(product.id);
     return [
       '<article class="product-card showcase-card" data-product-id="' + escapeHtml(product.id) + '" data-category="' + escapeHtml(product.categoryId) + '" data-type="' + escapeHtml(product.projectorType || "") + '">',
-      '<a class="showcase-card-link" data-product-link href="product.html?id=' + encodeURIComponent(product.id) + '"><div class="product-card-media">' + cardImageMarkup(product, "assets/outdoor-cinema.jpg", product.name, index < 3 ? "eager" : "lazy"),
+      '<a class="showcase-card-link" data-product-link href="' + window.VibecraftApi.productUrl(product) + '"><div class="product-card-media">' + cardImageMarkup(product, "assets/outdoor-cinema.jpg", product.name, index < 3 ? "eager" : "lazy"),
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",
       '</div>',
       '<div class="product-card-body"><h3>' + escapeHtml(product.name) + '</h3>',
@@ -269,7 +269,7 @@
     if (!dialog || !content || !product) return;
 
     var image = product.images && product.images[0] ? product.images[0] : "assets/outdoor-cinema.jpg";
-    content.innerHTML = '<div class="quick-view-layout"><div class="quick-view-image"><img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '"></div><div class="quick-view-copy"><p class="eyebrow">Quick view</p><h2 id="quickViewTitle">' + escapeHtml(product.name) + '</h2><p class="quick-view-price">' + priceMarkup(product) + '</p><p>' + escapeHtml(product.shortSummary || product.description || "A practical addition to your setup.") + '</p><div class="quick-view-actions"><button class="button button-dark" type="button" data-quick-add="' + escapeHtml(product.id) + '">Add to cart</button><a class="button button-outline" href="product.html?id=' + encodeURIComponent(product.id) + '">View details</a><a class="button quick-view-whatsapp" href="' + whatsappUrl(product) + '" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg><span>Chat on WhatsApp</span></a></div></div></div>';
+    content.innerHTML = '<div class="quick-view-layout"><div class="quick-view-image"><img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '"></div><div class="quick-view-copy"><p class="eyebrow">Quick view</p><h2 id="quickViewTitle">' + escapeHtml(product.name) + '</h2><p class="quick-view-price">' + priceMarkup(product) + '</p><p>' + escapeHtml(product.shortSummary || product.description || "A practical addition to your setup.") + '</p><div class="quick-view-actions"><button class="button button-dark" type="button" data-quick-add="' + escapeHtml(product.id) + '">Add to cart</button><a class="button button-outline" href="' + window.VibecraftApi.productUrl(product) + '">View details</a><a class="button quick-view-whatsapp" href="' + whatsappUrl(product) + '" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg><span>Chat on WhatsApp</span></a></div></div></div>';
     dialog.showModal();
   }
 

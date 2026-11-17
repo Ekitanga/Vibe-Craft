@@ -69,7 +69,7 @@
   }
 
   function whatsappUrl(product) {
-    var productUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
+    var productUrl = new URL(window.VibecraftApi.productUrl(product), window.location.origin).href;
     var message = "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + productUrl;
     return window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(message) : "https://wa.me/254707472897?text=" + encodeURIComponent(message);
   }
@@ -96,7 +96,7 @@
       "</div>",
       description ? '<p class="hero-slide-desc">' + escapeHtml(description) + "</p>" : "",
       '<div class="hero-slide-actions">',
-      '<a class="button button-dark hero-slide-cta" href="product.html?id=' + encodeURIComponent(product.id) + '">View product <span>↗</span></a>',
+      '<a class="button button-dark hero-slide-cta" href="' + window.VibecraftApi.productUrl(product) + '">View product <span>↗</span></a>',
       '<button class="hero-slide-quickadd" type="button" data-product-id="' +
         escapeHtml(product.id) +
         '" aria-label="Add ' +

@@ -63,7 +63,7 @@ const formatCatalogForPrompt = (products, detailedProductIds = new Set()) =>
     wifi: product.wifi,
     bluetooth: product.bluetooth,
     summary: product.shortSummary || undefined,
-    product_url: "/product.html?id=" + product.id,
+    product_url: productService.productPath(product),
     };
 
     if (includeDetails) {

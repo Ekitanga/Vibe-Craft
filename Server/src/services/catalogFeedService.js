@@ -41,7 +41,7 @@ const buildItems = async (baseUrl) => {
         condition: "new",
         price: money(onSale ? product.compareAtPrice : product.price, product.currency),
         sale_price: onSale ? money(product.price, product.currency) : "",
-        link: `${baseUrl}/product?id=${encodeURIComponent(product.id)}`,
+        link: `${baseUrl}${productService.productPath(product)}`,
         image_link: images[0] || "",
         additional_image_link: images.slice(1, 10).join(","),
         brand: product.brand || (product.specs && product.specs.brand) || "Vibecraft",

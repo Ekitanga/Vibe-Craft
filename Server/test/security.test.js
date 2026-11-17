@@ -87,8 +87,10 @@ test("policy pages, robots and sitemap are published", async () => {
   const custom = await http.get("/privacy");
   assert.match(custom.text, /<h2>Custom<\/h2>/);
   assert.match(custom.text, /&lt;b&gt;own&lt;\/b&gt;/);
-  assert.match((await http.get("/robots.txt")).text, /Disallow: \/admin/);
-  assert.match((await http.get("/sitemap.xml")).text, /product\?id=p1/);
+  const robots = (await http.get("/robots.txt")).text;
+  assert.match(robots, /Disallow: \/api\//);
+  assert.ok(!/admin/i.test(robots), "robots.txt must not point to the admin area");
+  assert.match((await http.get("/sitemap.xml")).text, /\/products\/p1</);
 });
 
 test("the promo code endpoint is rate limited", async () => {

@@ -50,12 +50,29 @@
     "admin-promotions.html": "/admin-promotions",
   };
 
+  // Home page sections have their own addresses (/about, /contact, /shop) instead of #anchors.
+  var sectionPaths = { top: "/", about: "/about", contact: "/contact", collection: "/shop" };
+  var sectionIds = { "/about": "about", "/contact": "contact", "/shop": "collection" };
+  var homePaths = { "/": true, "/about": true, "/contact": true, "/shop": true, "/index.html": true };
+
   function cleanInternalUrl(rawUrl) {
     var url = new URL(rawUrl, window.location.href);
     if (url.origin !== window.location.origin) return null;
     var fileName = url.pathname.split("/").pop();
+    var isHome = url.pathname === "/" || fileName === "index.html";
+    var section = url.hash ? url.hash.slice(1) : "";
+    if (isHome && section && Object.prototype.hasOwnProperty.call(sectionPaths, section)) {
+      return sectionPaths[section] + url.search;
+    }
     var cleanPath = cleanPages[fileName];
     return cleanPath ? cleanPath + url.search + url.hash : null;
+  }
+
+  function scrollToSection(path, smooth) {
+    var id = sectionIds[path];
+    var target = id ? document.getElementById(id) : null;
+    if (target) target.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+    else if (path === "/") window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
   }
 
   document.querySelectorAll('a[href]').forEach(function (link) {
@@ -70,8 +87,25 @@
     var cleanUrl = cleanInternalUrl(link.href);
     if (!cleanUrl) return;
     event.preventDefault();
+    var target = new URL(cleanUrl, window.location.origin);
+    // Already on the home page: scroll to the section without reloading.
+    if (homePaths[window.location.pathname] && (sectionIds[target.pathname] || target.pathname === "/") && !target.search) {
+      if (window.location.pathname !== target.pathname) window.history.pushState(null, "", target.pathname);
+      scrollToSection(target.pathname, true);
+      return;
+    }
     window.location.assign(cleanUrl);
   }, true);
+
+  // Opened directly at /about, /contact or /shop: scroll there once the page has laid out.
+  if (sectionIds[window.location.pathname]) {
+    window.addEventListener("load", function () {
+      scrollToSection(window.location.pathname, false);
+    });
+  }
+  window.addEventListener("popstate", function () {
+    if (homePaths[window.location.pathname]) scrollToSection(window.location.pathname, false);
+  });
 
   if (!document.querySelector(".admin-nav") && window.VibecraftApi) {
     function setText(id, value) {

@@ -76,7 +76,14 @@
     return null;
   }
 
+  // Product page address: /products/<slug> (the id also works and redirects).
+  function productUrl(product) {
+    var key = product && (product.slug || product.id);
+    return "/products/" + encodeURIComponent(key || "");
+  }
+
   window.VibecraftApi = {
+    productUrl: productUrl,
     get: function (path) {
       return request(path, { method: "GET" });
     },

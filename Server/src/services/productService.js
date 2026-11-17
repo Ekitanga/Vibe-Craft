@@ -218,6 +218,30 @@ const getProductById = async (id) => {
   return products[0];
 };
 
+// Product pages are addressed by slug (/products/<slug>); old links and the Pixel use the id.
+const getProductByIdOrSlug = async (key) => {
+  const value = String(key || "").trim();
+  if (!value || value.length > 200) throw new HttpError(404, "Product not found");
+  const result = await db.query(
+    `SELECT * FROM products WHERE id = $1 OR slug = $1 ORDER BY (id = $1) DESC LIMIT 1`,
+    [value]
+  );
+  if (!result.rows[0]) throw new HttpError(404, "Product not found");
+  const products = await hydrateProducts([mapProductRow(result.rows[0])]);
+  return products[0];
+};
+
+const productPath = (product) => "/products/" + encodeURIComponent((product && (product.slug || product.id)) || "");
+
+// Internal bookkeeping (where a product was imported from) is not for the public.
+const PRIVATE_SPEC_KEYS = ["sourceUrl", "sourceProductId"];
+const toPublicProduct = (product) => {
+  if (!product || !product.specs) return product;
+  const specs = { ...product.specs };
+  PRIVATE_SPEC_KEYS.forEach((key) => delete specs[key]);
+  return { ...product, specs };
+};
+
 const validateProductPayload = async (payload, options = {}) => {
   const requiredFields = ["name", "categoryId", "price", "currency", "stock", "description"];
   const missingFields = requiredFields.filter((field) => payload[field] === undefined || payload[field] === "");
@@ -522,6 +546,10 @@ const deleteProduct = async (id) => {
 module.exports = {
   listProducts,
   getProductById,
+  getProductByIdOrSlug,
+  productPath,
+  toPublicProduct,
+  buildSlug,
   createProduct,
   updateProduct,
   deleteProduct,

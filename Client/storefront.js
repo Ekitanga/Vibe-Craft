@@ -88,7 +88,7 @@
     var stockLabel = outOfStock ? "Out of stock" : lowStock ? stock + " left" : "In stock";
 
     return [
-      '<a class="product-card" href="product.html?id=' + encodeURIComponent(product.id) + '">',
+      '<a class="product-card" href="' + window.VibecraftApi.productUrl(product) + '">',
       '<div class="product-card-media">',
       cardImageMarkup(product),
       product.featured ? '<span class="product-card-badge">Featured</span>' : "",

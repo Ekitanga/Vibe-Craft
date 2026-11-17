@@ -84,7 +84,7 @@
 
     listEl.innerHTML = items.map(function (product) {
       var image = product.images && product.images[0] ? product.images[0] : "assets/outdoor-cinema.jpg";
-      return '<article class="wishlist-item"><img src="' + escapeHtml(image) + '" alt="" loading="lazy"><div class="wishlist-item-copy"><a href="product.html?id=' + encodeURIComponent(product.id) + '"><strong>' + escapeHtml(product.name) + '</strong></a><span>' + priceFormatter.format(Number(product.price || 0)) + '</span></div><button class="wishlist-remove" type="button" data-remove-wishlist="' + escapeHtml(product.id) + '" aria-label="Remove ' + escapeHtml(product.name) + ' from wishlist">×</button></article>';
+      return '<article class="wishlist-item"><img src="' + escapeHtml(image) + '" alt="" loading="lazy"><div class="wishlist-item-copy"><a href="' + escapeHtml(window.VibecraftApi.productUrl(product)) + '"><strong>' + escapeHtml(product.name) + '</strong></a><span>' + priceFormatter.format(Number(product.price || 0)) + '</span></div><button class="wishlist-remove" type="button" data-remove-wishlist="' + escapeHtml(product.id) + '" aria-label="Remove ' + escapeHtml(product.name) + ' from wishlist">×</button></article>';
     }).join("");
   }
 

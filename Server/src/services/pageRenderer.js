@@ -69,21 +69,15 @@ const trackingConfig = async (req) => {
   return config;
 };
 
-const productForPage = async (req) => {
-  const id = typeof req.query.id === "string" ? req.query.id : "";
-  if (!id || id.length > 100) return null;
-  try {
-    return await productService.getProductById(id);
-  } catch (_error) {
-    return null;
-  }
-};
+// Set by the /products/:slug route.
+const productForPage = (req) => req.productForPage || null;
 
 const shareTags = async (req, html, { baseUrl, settings, product }) => {
   const seo = await integrationSettings.getConfig("seo");
   if (!seo.openGraphEnabled || /property="og:/.test(html)) return "";
 
-  const url = `${baseUrl}${req.originalUrl.split("#")[0]}`;
+  // Canonical address: no query string (ad tracking parameters, etc.).
+  const url = `${baseUrl}${product ? productService.productPath(product) : req.path}`;
   const image = product
     ? absoluteUrl(baseUrl, (product.images || []).find((src) => !/\/video\/upload\/|\.(mp4|webm|mov)(\?|$)/i.test(src)))
     : absoluteUrl(baseUrl, seo.defaultImageUrl || "/assets/outdoor-cinema.jpg");
@@ -108,9 +102,10 @@ const shareTags = async (req, html, { baseUrl, settings, product }) => {
     tags.push(["property", "product:availability", product.stock > 0 ? "in stock" : "out of stock"]);
     tags.push(["property", "product:retailer_item_id", product.id]);
   }
-  return tags
-    .filter(([, , content]) => content)
-    .map(([kind, name, content]) => `<meta ${kind}="${attr(name)}" content="${attr(content)}" />`)
+  return [`<link rel="canonical" href="${attr(url)}" />`]
+    .concat(tags
+      .filter(([, , content]) => content)
+      .map(([kind, name, content]) => `<meta ${kind}="${attr(name)}" content="${attr(content)}" />`))
     .join("\n    ");
 };
 
@@ -120,7 +115,7 @@ const storefrontHead = async (req, html, nonce) => {
     siteSettingsService.getSettings(),
     getPublicBaseUrl(req),
   ]);
-  const product = req.path === "/product" ? await productForPage(req) : null;
+  const product = productForPage(req);
   const parts = [];
 
   if (meta.domainVerificationCode) {
@@ -157,10 +152,13 @@ const renderPage = async (req, res, fileName, { admin = false, adminLogin = fals
     html = html.replace(/<\/head>/i, `    <meta name="robots" content="noindex, nofollow">\n    <script nonce="${nonce}">window.VIBECRAFT_ADMIN_LOGIN=${config};</script>\n  </head>`);
     res.setHeader("X-Robots-Tag", "noindex, nofollow");
   } else if (admin) {
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
     const config = scriptJson({ path: loginPath ? "/" + loginPath : "/login" });
     html = html.replace(/<\/head>/i, `    <script nonce="${nonce}">window.VIBECRAFT_ADMIN_LOGIN=${config};</script>\n  </head>`);
   }
   if (!admin && !adminLogin) {
+    // Pages are also served at nested paths (/products/<slug>); keep relative assets at the root.
+    html = html.replace(/<head>/i, '<head>\n    <base href="/">');
     const head = await storefrontHead(req, html, nonce);
     html = html.replace(/<\/head>/i, `    ${head}\n  </head>`);
   }
@@ -301,7 +299,7 @@ const sitemapXml = async (req) => {
     { loc: `${baseUrl}/terms`, priority: "0.2" },
     { loc: `${baseUrl}/refunds`, priority: "0.2" },
     ...products.map((product) => ({
-      loc: `${baseUrl}/product?id=${encodeURIComponent(product.id)}`,
+      loc: `${baseUrl}${productService.productPath(product)}`,
       lastmod: product.updatedAt ? new Date(product.updatedAt).toISOString().slice(0, 10) : undefined,
       priority: "0.8",
     })),

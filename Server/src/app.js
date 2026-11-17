@@ -18,6 +18,8 @@ const marketingController = require("./controllers/marketingController");
 const adminAuthService = require("./services/adminAuthService");
 const pageRenderer = require("./services/pageRenderer");
 const adminLoginPath = require("./services/adminLoginPath");
+const productService = require("./services/productService");
+const integrationSettingsService = require("./services/integrationSettingsService");
 const orderHooks = require("./services/orderHooks");
 const asyncHandler = require("./utils/asyncHandler");
 const { adminSessionCookieName } = require("./middleware/adminAuth");
@@ -45,6 +47,26 @@ const logFormat = env.nodeEnv === "production"
 if (!env.isTest) app.use(morgan(logFormat));
 
 app.use(securityHeaders);
+
+// One public address: pages requested on another host (e.g. the *.onrender.com
+// address) are sent to the store's domain, so it is not a second, unprotected copy.
+// APIs, webhooks, feeds and health checks are left alone.
+app.use(asyncHandler(async (req, res, next) => {
+  if (!env.isProduction || (req.method !== "GET" && req.method !== "HEAD")) return next();
+  if (/^\/(api|feeds)\//.test(req.path)) return next();
+  const site = await integrationSettingsService.getConfig("site");
+  let canonical;
+  try {
+    canonical = site.publicBaseUrl ? new URL(site.publicBaseUrl) : null;
+  } catch (_error) {
+    canonical = null;
+  }
+  if (!canonical) return next();
+  const host = String(req.hostname || "").toLowerCase();
+  if (host === canonical.hostname || host === "www." + canonical.hostname) return next();
+  return res.redirect(301, canonical.origin + req.originalUrl);
+}));
+
 app.use("/api", cors);
 
 // Webhooks need the raw request body (signature checks), so they are mounted before
@@ -125,6 +147,46 @@ const adminPageGuard = async (req, res, next) => {
     return next(error);
   }
 };
+
+// ---- Clean storefront addresses -------------------------------------------------------
+// Keep ad/tracking parameters (utm_*, fbclid) when redirecting old links.
+const queryWithout = (req, drop) => {
+  const params = new URLSearchParams();
+  Object.entries(req.query).forEach(([key, value]) => {
+    if (key !== drop && typeof value === "string") params.append(key, value);
+  });
+  const text = params.toString();
+  return text ? "?" + text : "";
+};
+
+// Product pages: /products/<slug>. A product's id also works and redirects to the slug.
+app.get("/products/:slug", attachCustomerIfPresent, asyncHandler(async (req, res, next) => {
+  let product;
+  try {
+    product = await productService.getProductByIdOrSlug(req.params.slug);
+  } catch (_error) {
+    return notFound(req, res, next);
+  }
+  const canonicalPath = productService.productPath(product);
+  if (req.path !== canonicalPath) return res.redirect(301, canonicalPath + queryWithout(req));
+  req.productForPage = product;
+  return pageRenderer.renderPage(req, res, "product.html");
+}));
+
+// Old links (/product?id=…, used in earlier ads and shares) move permanently.
+app.get("/product", asyncHandler(async (req, res, next) => {
+  const id = typeof req.query.id === "string" ? req.query.id : "";
+  if (!id) return res.redirect(301, "/shop" + queryWithout(req, "id"));
+  try {
+    const product = await productService.getProductByIdOrSlug(id);
+    return res.redirect(301, productService.productPath(product) + queryWithout(req, "id"));
+  } catch (_error) {
+    return notFound(req, res, next);
+  }
+}));
+
+// Home page sections have their own addresses.
+app.get(["/about", "/contact", "/shop"], attachCustomerIfPresent, asyncHandler((req, res) => pageRenderer.renderPage(req, res, "index.html")));
 
 // The private admin sign-in page (Admin → Integrations → Security → Private admin sign-in address).
 app.get("/:slug", asyncHandler(async (req, res, next) => {
