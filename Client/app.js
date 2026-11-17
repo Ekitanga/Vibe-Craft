@@ -52,7 +52,8 @@
 
   // Home page sections have their own addresses (/about, /contact, /shop) instead of #anchors.
   var sectionPaths = { top: "/", about: "/about", contact: "/contact", collection: "/shop" };
-  var sectionIds = { "/about": "about", "/contact": "contact", "/shop": "collection" };
+  // First id that exists wins (the home page script replaces the static #about band).
+  var sectionIds = { "/about": ["about", "rooms"], "/contact": ["contact"], "/shop": ["collection"] };
   var homePaths = { "/": true, "/about": true, "/contact": true, "/shop": true, "/index.html": true };
 
   function cleanInternalUrl(rawUrl) {
@@ -69,8 +70,11 @@
   }
 
   function scrollToSection(path, smooth) {
-    var id = sectionIds[path];
-    var target = id ? document.getElementById(id) : null;
+    var target = null;
+    (sectionIds[path] || []).some(function (id) {
+      target = document.getElementById(id);
+      return Boolean(target);
+    });
     if (target) target.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     else if (path === "/") window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
   }
@@ -101,6 +105,8 @@
   if (sectionIds[window.location.pathname]) {
     window.addEventListener("load", function () {
       scrollToSection(window.location.pathname, false);
+      // Products load after the page; settle on the section once they are in.
+      window.setTimeout(function () { scrollToSection(window.location.pathname, false); }, 900);
     });
   }
   window.addEventListener("popstate", function () {
