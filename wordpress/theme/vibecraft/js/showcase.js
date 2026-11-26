@@ -1,0 +1,367 @@
+(function () {
+  "use strict";
+
+  var main = document.querySelector("main");
+  if (!main || !window.VibecraftApi) return;
+
+  main.innerHTML = [
+    '<section class="hero-slideshow showcase-hero" id="top" aria-roledescription="carousel" aria-label="Featured projectors">',
+    '  <div class="hero-slides" id="heroSlides">',
+    '    <div class="hero-slide is-active" data-index="0">',
+    '      <img src="' + window.VC_THEME_URL + 'assets/outdoor-cinema.jpg" alt="Outdoor cinema setup at sunset" />',
+    '      <div class="hero-slide-scrim"></div>',
+    '      <div class="hero-slide-info">',
+    '        <div class="hero-slide-badges"><span class="hero-slide-badge">Vibecraft collection</span></div>',
+    '        <h1 class="hero-slide-title">Projectors, in their element.</h1>',
+    '        <p class="hero-slide-desc">Home cinema, boardroom, or somewhere in between.</p>',
+    '        <div class="hero-slide-actions"><a class="button button-dark hero-slide-cta" href="#collection">Explore the collection <span>&#8594;</span></a></div>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '  <button class="hero-arrow hero-arrow-prev" id="heroPrev" type="button" aria-label="Previous projector" hidden>&#8249;</button>',
+    '  <button class="hero-arrow hero-arrow-next" id="heroNext" type="button" aria-label="Next projector" hidden>&#8250;</button>',
+    '  <div class="hero-progress" id="heroProgress" role="tablist" aria-label="Choose a featured projector" hidden></div>',
+    '</section>',
+    '<section class="shop-section showcase-collection section-shell" id="collection">',
+    '  <div class="showcase-filters" id="showcaseFilters" role="tablist" aria-label="Filter products">',
+    '    <button class="showcase-filter is-active" type="button" role="tab" aria-selected="true" data-filter="all">All</button>',
+    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="projectors">Projectors</button>',
+    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="screens">Screens</button>',
+    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="portable">Portable</button>',
+    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="office">Office</button>',
+    '  </div>',
+    '  <div class="showcase-grid" id="shopCategories" aria-live="polite"><p class="shop-rail-status" role="status"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading products...</span></span></p></div>',
+    '</section>',
+    '<dialog class="quick-view-dialog" id="quickViewDialog" aria-labelledby="quickViewTitle"><button class="quick-view-close" type="button" data-close-quick-view aria-label="Close quick view">×</button><div id="quickViewContent"></div></dialog>',
+    '<section class="room-showcase section-shell" id="rooms">',
+    '  <div class="section-heading"><div><p class="eyebrow">Shop by room</p><h2>See it <em>there.</em></h2></div><p class="section-note">A better picture starts with the right space.</p></div>',
+    '  <div class="room-grid">',
+    '    <a class="room-tile room-tile-home" href="#collection" data-room-filter="portable"><span>MOVIE NIGHTS</span><strong>Your cinema. Your rules.</strong></a>',
+    '    <a class="room-tile room-tile-office" href="#collection" data-room-filter="office"><span>WORK &amp; LEARN</span><strong>Make every detail bigger.</strong></a>',
+    '    <a class="room-tile room-tile-outdoor" href="#collection" data-room-filter="all"><span>MATCH DAY</span><strong>Never miss the action.</strong></a>',
+    '  </div>',
+    '</section>',
+    '<section class="store-location store-location-compact section-shell" id="find-us">',
+    '  <div class="store-location-copy">',
+    '    <p class="eyebrow"><span class="location-pin" aria-hidden="true">📍</span> Find Vibecraft</p>',
+    '    <p class="store-location-address"><strong>Rasumal House · 4th floor · Shop 14</strong><span>Opposite Imenti House · Tom Mboya Street, Nairobi</span></p>',
+    '  </div>',
+    '  <div class="store-location-actions">',
+    '    <button class="store-video-preview store-directions-trigger" id="storeDirectionsOpen" type="button" aria-label="Watch direction video">',
+    '      <video class="store-video-preview-video" id="storeDirectionsPreviewVideo" muted playsinline preload="auto" tabindex="-1" aria-hidden="true">',
+    '        <source src="' + window.VC_THEME_URL + 'assets/store-directions.mp4" type="video/mp4" />',
+    '      </video>',
+    '      <span class="store-video-preview-overlay"><span class="store-video-play" aria-hidden="true">▶</span><span>Watch directions</span></span>',
+    '    </button>',
+    '    <a class="store-map-button" href="https://www.google.com/maps/dir/?api=1&amp;destination=-1.2826763864005812%2C36.82444935619709" target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps" title="Open Google Maps"><img class="google-maps-icon" src="https://www.gstatic.com/images/branding/product/1x/maps_96dp.png" alt="" width="36" height="36" /></a>',
+    '  </div>',
+    '</section>',
+    '<dialog class="store-directions-dialog" id="storeDirectionsDialog" aria-labelledby="storeDirectionsTitle">',
+    '  <div class="store-directions-dialog-head"><div><p class="eyebrow">Getting here</p><h2 id="storeDirectionsTitle">See the direction video</h2></div><button class="store-directions-close" id="storeDirectionsClose" type="button" aria-label="Close direction video">✕</button></div>',
+    '  <video class="store-location-video" id="storeDirectionsVideo" controls playsinline preload="metadata">',
+    '    <source src="' + window.VC_THEME_URL + 'assets/store-directions.mp4" type="video/mp4" />',
+    '    Your browser does not support video playback.',
+    '  </video>',
+    '  <p class="store-directions-dialog-note"><span class="location-pin" aria-hidden="true">📍</span> Rasumal House, 4th floor, Shop 14, opposite Imenti House, Nairobi.</p>',
+    '</dialog>',
+  ].join("");
+
+  var gallery = document.getElementById("shopCategories");
+  var filters = document.getElementById("showcaseFilters");
+  var searchToggle = document.getElementById("navSearchToggle");
+  var searchPanel = document.getElementById("productSearchPanel");
+  var searchForm = document.getElementById("productSearchForm");
+  var searchInput = document.getElementById("productSearchInput");
+  var searchStatus = document.getElementById("productSearchStatus");
+  var products = [];
+  var storeDirectionsDialog = document.getElementById("storeDirectionsDialog");
+  var storeDirectionsVideo = document.getElementById("storeDirectionsVideo");
+  var storeDirectionsPreviewVideo = document.getElementById("storeDirectionsPreviewVideo");
+  var storeDirectionsOpen = document.getElementById("storeDirectionsOpen");
+  var storeDirectionsClose = document.getElementById("storeDirectionsClose");
+
+  if (storeDirectionsPreviewVideo) {
+    storeDirectionsPreviewVideo.addEventListener("loadeddata", function () {
+      var duration = Number.isFinite(storeDirectionsPreviewVideo.duration) ? storeDirectionsPreviewVideo.duration : 0;
+      if (!duration) return;
+      storeDirectionsPreviewVideo.currentTime = Math.min(1.2, Math.max(0, duration * 0.18));
+      storeDirectionsPreviewVideo.pause();
+    });
+  }
+
+  if (storeDirectionsOpen && storeDirectionsDialog) {
+    storeDirectionsOpen.addEventListener("click", function () {
+      storeDirectionsDialog.showModal();
+    });
+  }
+  if (storeDirectionsClose && storeDirectionsDialog) {
+    storeDirectionsClose.addEventListener("click", function () {
+      storeDirectionsDialog.close();
+    });
+  }
+  if (storeDirectionsDialog) {
+    storeDirectionsDialog.addEventListener("close", function () {
+      if (storeDirectionsVideo) storeDirectionsVideo.pause();
+    });
+    storeDirectionsDialog.addEventListener("click", function (event) {
+      if (event.target === storeDirectionsDialog) storeDirectionsDialog.close();
+    });
+  }
+  var currencyFormatters = {};
+  var activeFilter = "all";
+  var searchQuery = new URLSearchParams(window.location.search).get("search") || "";
+  searchQuery = searchQuery.trim().toLowerCase();
+  if (searchInput) searchInput.value = searchQuery;
+  var fallbackProducts = [
+    { id: "vc-cinebeam-pro-4k", name: "VC CineBeam Pro 4K Smart Projector", brand: "Vibecraft", categoryId: "projectors", projectorType: "home", resolution: "4K UHD support", price: 189000, currency: "KES", images: ["https://images.unsplash.com/photo-1756729924040-9d0084a4fdbe?auto=format&fit=crop&q=82&w=1400"], shortSummary: "Premium home cinema." },
+    { id: "vc-lumen-home-1080", name: "VC Lumen Home 1080 Smart Projector", brand: "Vibecraft", categoryId: "projectors", projectorType: "portable", resolution: "1080p", price: 68500, currency: "KES", images: ["https://images.unsplash.com/photo-1750994700092-19f94d4da5ff?auto=format&fit=crop&q=82&w=1400"], shortSummary: "Compact everyday viewing." },
+    { id: "vc-boardroom-x5000", name: "VC Boardroom X5000 Presentation Projector", brand: "Vibecraft", categoryId: "projectors", projectorType: "office", resolution: "5000 ANSI lumens", price: 142000, currency: "KES", images: ["https://images.unsplash.com/photo-1756729924123-d7e8d85afaec?auto=format&fit=crop&q=82&w=1400"], shortSummary: "Bright room clarity." },
+    { id: "vc-tripod-screen-100", name: "VC FlexView 100 Inch Tripod Screen", brand: "Vibecraft", categoryId: "screens", projectorType: "portable", resolution: "4K ready surface", price: 23500, currency: "KES", images: [window.VC_THEME_URL + "assets/outdoor-cinema.jpg"], shortSummary: "A cleaner projection surface." }
+  ];
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function cardImageMarkup(product, fallback, alt, loading) {
+    var specs = product.specs || {};
+    var desktopImage = specs.cardDesktopImage || (product.images && product.images[0]) || fallback;
+    var mobileImage = specs.cardMobileImage;
+
+    return '<picture>' +
+      (mobileImage ? '<source media="(max-width: 560px)" srcset="' + escapeHtml(mobileImage) + '" />' : '') +
+      '<img src="' + escapeHtml(desktopImage) + '" alt="' + escapeHtml(alt) + '" loading="' + loading + '" />' +
+      '</picture>';
+  }
+
+  function formatPrice(amount, currency) {
+    var code = currency || "KES";
+    if (!currencyFormatters[code]) currencyFormatters[code] = new Intl.NumberFormat("en-KE", { style: "currency", currency: code, maximumFractionDigits: 0 });
+    return currencyFormatters[code].format(Number(amount || 0));
+  }
+
+  function priceMarkup(product) {
+    var price = Number(product.price || 0);
+    var compareAtPrice = Number(product.compareAtPrice || 0);
+    var isDiscounted = compareAtPrice > price;
+
+    if (!isDiscounted) return '<strong class="price-current">' + formatPrice(price, product.currency) + "</strong>";
+
+    var discountPercent = Math.round((1 - price / compareAtPrice) * 100);
+    return '<span class="price-stack"><strong class="price-current">' + formatPrice(price, product.currency) + '</strong><del class="price-compare">' + formatPrice(compareAtPrice, product.currency) + '</del><span class="price-discount">-' + discountPercent + '%</span></span>';
+  }
+
+  function whatsappUrl(product) {
+    var productUrl = new URL(window.VibecraftApi.productUrl(product), window.location.origin).href;
+    var message = "Hi Vibecraft, I'm interested in " + product.name + ". Product link: " + productUrl;
+    return window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(message) : "https://wa.me/254707472897?text=" + encodeURIComponent(message);
+  }
+
+  function isProjectorProduct(product) {
+    return /(^|-)?projectors$/.test(String(product.categoryId || "").toLowerCase());
+  }
+
+  function productMatches(product, filter) {
+    if (filter === "all") return true;
+    if (filter === "portable" || filter === "office") return product.projectorType === filter;
+    if (filter === "projectors") return isProjectorProduct(product);
+    return product.categoryId === filter;
+  }
+
+  function productMarkup(product, index) {
+    var isWishlisted = window.VibecraftWishlist && window.VibecraftWishlist.has(product.id);
+    return [
+      '<article class="product-card showcase-card" data-product-id="' + escapeHtml(product.id) + '" data-category="' + escapeHtml(product.categoryId) + '" data-type="' + escapeHtml(product.projectorType || "") + '">',
+      '<a class="showcase-card-link" data-product-link href="' + window.VibecraftApi.productUrl(product) + '"><div class="product-card-media">' + cardImageMarkup(product, window.VC_THEME_URL + "assets/outdoor-cinema.jpg", product.name, index < 3 ? "eager" : "lazy"),
+      product.featured ? '<span class="product-card-badge">Featured</span>' : "",
+      '</div>',
+      '<div class="product-card-body"><h3>' + escapeHtml(product.name) + '</h3>',
+      '<div class="showcase-card-meta">' + priceMarkup(product) + '</div></div></a>',
+      '<div class="showcase-card-actions">',
+      '<button class="showcase-card-cart" type="button" data-card-action="cart" data-product-id="' + escapeHtml(product.id) + '" aria-label="Buy ' + escapeHtml(product.name) + ' now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg></button>',
+      '<a class="showcase-card-icon showcase-card-whatsapp" href="' + whatsappUrl(product) + '" target="_blank" rel="noopener noreferrer" aria-label="Chat about ' + escapeHtml(product.name) + ' on WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg></a>',
+      '<button class="showcase-card-icon' + (isWishlisted ? " is-selected" : "") + '" type="button" data-card-action="wishlist" data-product-id="' + escapeHtml(product.id) + '" aria-pressed="' + (isWishlisted ? "true" : "false") + '" aria-label="' + (isWishlisted ? "Remove from wishlist" : "Add to wishlist") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 8.7c0 5.3-8.8 10.1-8.8 10.1S3.2 14 3.2 8.7A4.7 4.7 0 0 1 12 6a4.7 4.7 0 0 1 8.8 2.7Z"/></svg></button>',
+      '<button class="showcase-card-icon" type="button" data-card-action="quick-view" data-product-id="' + escapeHtml(product.id) + '" aria-label="Quick view ' + escapeHtml(product.name) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>',
+      '</div></article>'
+    ].join("");
+  }
+
+  function renderGallery(filter) {
+    activeFilter = filter;
+    var visible = products.filter(function (product) {
+      if (!productMatches(product, filter)) return false;
+      if (!searchQuery) return true;
+      return [product.name, product.brand, product.categoryId, product.projectorType].join(" ").toLowerCase().indexOf(searchQuery) !== -1;
+    });
+    gallery.innerHTML = visible.length ? visible.map(productMarkup).join("") : '<p class="shop-rail-status">No products found for &ldquo;' + escapeHtml(searchQuery) + '&rdquo;.</p>';
+    if (searchStatus) searchStatus.textContent = searchQuery ? visible.length + " result" + (visible.length === 1 ? "" : "s") + " found" : "Search the collection by name or type.";
+  }
+
+  function specValue(product, key, fallback) {
+    return product[key] || (product.specs && product.specs[key]) || fallback || "-";
+  }
+
+  function numericLumens(product) {
+    var value = Number(product.ansiLumens || 0);
+    if (value) return value;
+    var brightness = String(specValue(product, "brightness", "")).replace(/,/g, "").match(/\d+/);
+    return brightness ? Number(brightness[0]) : 0;
+  }
+
+  function localComparisonSummary(selected) {
+    if (selected.length < 2) return "Select at least two products for a comparison.";
+
+    var brightest = selected.slice().sort(function (a, b) { return numericLumens(b) - numericLumens(a); })[0];
+    var cheapest = selected.slice().sort(function (a, b) { return Number(a.price || 0) - Number(b.price || 0); })[0];
+    var lines = [brightest.name + " is the stronger bright-room pick because it has the highest listed brightness."];
+
+    if (cheapest.id !== brightest.id) lines.push(cheapest.name + " is the value pick at " + formatPrice(cheapest.price, cheapest.currency) + ".");
+    lines.push("For the best choice, match the brighter option to daylight-heavy rooms and the lower-priced option to everyday viewing or a tighter budget.");
+    return lines.join(" ");
+  }
+
+  async function requestAiComparison(selected) {
+    var verdictText = document.getElementById("compareVerdictText");
+    var verdictStatus = document.getElementById("compareVerdictStatus");
+
+    if (selected.length < 2) {
+      verdictText.textContent = localComparisonSummary(selected);
+      verdictStatus.textContent = "Choose two or three products";
+      return;
+    }
+
+    var prompt = [
+      "Compare these selected Vibecraft products like a concise GSMArena buyer's guide.",
+      "Say which one is better for bright rooms, which is better for image quality or features, and which is better value.",
+      "Give a clear overall recommendation, but explain when another option makes more sense.",
+      "Use only exact catalog facts. Keep it to 3 short paragraphs or 4 short bullets. Do not repeat the entire spec table.",
+      "Selected products: " + selected.map(function (product) {
+        return product.name + " | price: " + formatPrice(product.price, product.currency) + " | resolution: " + specValue(product, "resolution") + " | brightness: " + specValue(product, "brightness") + " | type: " + specValue(product, "projectorType", product.categoryId) + " | summary: " + (product.shortSummary || "");
+      }).join(" || ")
+    ].join("\n");
+
+    try {
+      var payload = await window.VibecraftApi.post("ai/chat", { message: prompt, history: [] });
+      verdictText.textContent = payload && payload.data && payload.data.reply ? payload.data.reply : localComparisonSummary(selected);
+      verdictStatus.textContent = "Catalog-aware summary";
+    } catch (_error) {
+      verdictText.textContent = localComparisonSummary(selected);
+      verdictStatus.textContent = "Quick summary";
+    }
+  }
+
+  function renderCompareDialog() {
+    var body = document.getElementById("compareDialogBody");
+    var selected = compareIds.map(function (id) { return products.find(function (product) { return product.id === id; }); }).filter(Boolean);
+    body.innerHTML = '<section class="compare-verdict" aria-live="polite"><div class="compare-verdict-head"><div class="compare-verdict-title"><span class="ai-orb ai-orb-avatar" aria-hidden="true"></span><div><p class="eyebrow">AI comparison</p><strong>Which one is better?</strong></div></div><span id="compareVerdictStatus">Comparing...</span></div><p id="compareVerdictText">Reading the selected products...</p></section><div class="compare-table-scroll" aria-hidden="true"><span>Swipe left to see more</span><span>↔</span></div><div class="compare-table-wrap" tabindex="0" role="region" aria-label="Scrollable product comparison"><table class="compare-table"><thead><tr><th> </th>' + selected.map(function (product) { return '<th>' + escapeHtml(product.name) + '</th>'; }).join("") + '</tr></thead><tbody>' + [
+      ["Price", selected.map(function (product) { return formatPrice(product.price, product.currency); })],
+      ["Resolution", selected.map(function (product) { return specValue(product, "resolution"); })],
+      ["Brightness", selected.map(function (product) { return specValue(product, "brightness"); })],
+      ["Projection size", selected.map(function (product) { return specValue(product, "projectionSize"); })],
+      ["Type", selected.map(function (product) { return specValue(product, "projectorType", product.categoryId); })]
+    ].map(function (row) { return '<tr><th>' + row[0] + '</th>' + row[1].map(function (value) { return '<td>' + escapeHtml(value) + '</td>'; }).join("") + '</tr>'; }).join("") + '</tbody></table></div>';
+    requestAiComparison(selected);
+  }
+
+  function renderQuickView(product) {
+    var dialog = document.getElementById("quickViewDialog");
+    var content = document.getElementById("quickViewContent");
+    if (!dialog || !content || !product) return;
+
+    var image = product.images && product.images[0] ? product.images[0] : window.VC_THEME_URL + "assets/outdoor-cinema.jpg";
+    content.innerHTML = '<div class="quick-view-layout"><div class="quick-view-image"><img src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '"></div><div class="quick-view-copy"><p class="eyebrow">Quick view</p><h2 id="quickViewTitle">' + escapeHtml(product.name) + '</h2><p class="quick-view-price">' + priceMarkup(product) + '</p><p>' + escapeHtml(product.shortSummary || product.description || "A practical addition to your setup.") + '</p><div class="quick-view-actions"><button class="button button-dark" type="button" data-quick-add="' + escapeHtml(product.id) + '">Add to cart</button><a class="button button-outline" href="' + window.VibecraftApi.productUrl(product) + '">View details</a><a class="button quick-view-whatsapp" href="' + whatsappUrl(product) + '" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg><span>Chat on WhatsApp</span></a></div></div></div>';
+    dialog.showModal();
+  }
+
+  function selectFilter(filter) {
+    filters.querySelectorAll("[data-filter]").forEach(function (button) {
+      var active = button.getAttribute("data-filter") === filter;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    renderGallery(filter);
+  }
+
+  document.querySelectorAll("[data-scene-filter]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      document.querySelectorAll("[data-scene-filter]").forEach(function (item) { item.classList.toggle("is-active", item === button); });
+      selectFilter(button.getAttribute("data-scene-filter"));
+    });
+  });
+
+  filters.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-filter]");
+    if (button) selectFilter(button.getAttribute("data-filter"));
+  });
+
+  gallery.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-card-action]");
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    var productId = button.getAttribute("data-product-id");
+    var product = products.find(function (item) { return item.id === productId; });
+    if (!product) return;
+
+    if (button.getAttribute("data-card-action") === "cart") {
+      window.VibecraftCart.addItem(product.id, 1);
+      window.location.href = "cart.html";
+    } else if (button.getAttribute("data-card-action") === "wishlist") {
+      window.VibecraftWishlist.toggle(product);
+    } else if (button.getAttribute("data-card-action") === "quick-view") {
+      renderQuickView(product);
+    }
+  });
+
+  document.getElementById("quickViewDialog").addEventListener("click", function (event) {
+    if (event.target.closest("[data-close-quick-view]")) document.getElementById("quickViewDialog").close();
+    var addButton = event.target.closest("[data-quick-add]");
+    if (!addButton) return;
+    window.VibecraftCart.addItem(addButton.getAttribute("data-quick-add"), 1);
+    addButton.textContent = "Added to cart";
+  });
+
+  document.addEventListener("wishlist:change", function () { renderGallery(activeFilter); });
+
+  document.querySelectorAll("[data-room-filter]").forEach(function (tile) {
+    tile.addEventListener("click", function () {
+      selectFilter(tile.getAttribute("data-room-filter"));
+    });
+  });
+
+  function setSearchOpen(isOpen) {
+    if (!searchPanel || !searchToggle) return;
+    searchPanel.hidden = !isOpen;
+    searchToggle.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen && searchInput) window.setTimeout(function () { searchInput.focus(); }, 0);
+  }
+
+  if (searchToggle && searchPanel && searchInput) {
+    searchToggle.addEventListener("click", function () { setSearchOpen(searchPanel.hidden); });
+    searchInput.addEventListener("input", function () {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      renderGallery(activeFilter);
+    });
+    searchForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      document.getElementById("collection").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    document.addEventListener("click", function (event) {
+      if (!searchPanel.hidden && !searchPanel.contains(event.target) && !searchToggle.contains(event.target)) setSearchOpen(false);
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") setSearchOpen(false);
+    });
+  }
+
+  window.VibecraftApi.get("products").then(function (payload) {
+    products = (payload && payload.data) || fallbackProducts;
+    if (!products.length) products = fallbackProducts;
+    renderGallery("all");
+  }).catch(function () {
+    products = fallbackProducts;
+    renderGallery("all");
+  });
+})();

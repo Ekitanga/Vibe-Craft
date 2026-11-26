@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':false;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Log in to your Vibecraft account." />
+    <title>Vibecraft — Log in</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="siteNav">Menu</button>
+      <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+        <button class="nav-close" id="navClose" type="button" aria-label="Close navigation">✕</button>
+        <a href="index.html#top">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+        <a class="mobile-cart-link" href="cart.html"><span class="cart-link-label"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>Cart</span><span class="cart-count" hidden>0</span></a>
+        <a class="mobile-login-link" href="login.html" data-auth-link>Log in</a>
+      </nav>
+      <div class="nav-search-wrap">
+        <button class="nav-search-toggle" id="navSearchToggle" type="button" aria-label="Search products" aria-expanded="false" aria-controls="productSearchPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button>
+        <div class="nav-search-popover" id="productSearchPanel" hidden>
+          <form class="nav-search-form" id="productSearchForm" role="search">
+            <label class="sr-only" for="productSearchInput">Search products</label>
+            <input id="productSearchInput" type="search" placeholder="Search products" autocomplete="off" />
+            <button class="nav-search-submit" type="submit" aria-label="Search products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button>
+          </form>
+          <p class="nav-search-status" id="productSearchStatus" aria-live="polite">Search the collection by name or type.</p>
+        </div>
+      </div>
+      <div class="cart-hover-wrap">
+        <button class="cart-toggle" id="cartToggle" type="button" aria-label="Open cart" aria-expanded="false" aria-controls="cartDrawer"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg><span class="cart-count" hidden>0</span></button>
+        <div class="cart-preview">
+          <div class="cart-preview-body" id="cartPreviewBody"><p class="cart-empty">Your cart is empty.</p></div>
+          <a class="text-link cart-preview-link" href="cart.html">View cart <span>→</span></a>
+        </div>
+      </div>
+      <div class="account-menu-wrap">
+        <a class="login-link desktop-auth-link" href="login.html" data-auth-link>Log in</a>
+        <div class="customer-account-menu" id="customerAccountMenu" hidden role="menu">
+          <div class="admin-account-info">
+            <strong id="customerAccountName">Account</strong>
+            <span id="customerAccountEmail"></span>
+          </div>
+          <a class="admin-account-item" href="account.html" role="menuitem">My account</a>
+          <a class="admin-account-item" href="account.html#orders" role="menuitem">Order history</a>
+          <a class="admin-account-item" href="account.html#wishlist" role="menuitem">Wishlist</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="customerAccountSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+    <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Close navigation" hidden></button>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart" aria-hidden="true">
+      <div class="cart-drawer-head">
+        <h2>Your cart</h2>
+        <button class="nav-close" id="cartClose" type="button" aria-label="Close cart">✕</button>
+      </div>
+      <div class="cart-drawer-body" id="cartDrawerBody"></div>
+      <div class="cart-drawer-footer">
+        <div class="cart-drawer-total"><span>Subtotal</span><strong id="cartDrawerSubtotal">KES 0</strong></div>
+        <a class="button button-dark auth-submit" href="cart.html">Go to checkout</a>
+      </div>
+    </aside>
+    <button class="menu-backdrop" id="cartBackdrop" type="button" aria-label="Close cart" hidden></button>
+
+    <main class="auth-main">
+      <section class="auth-shell">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Log <em>in.</em></h1>
+        <p class="auth-intro">Sign in to view and manage your Vibecraft account.</p>
+
+        <form class="auth-card" id="loginForm" novalidate>
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button class="button button-dark auth-submit" type="submit">Log in</button>
+          <p class="form-status" id="loginStatus" role="status"></p>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+        <div id="googleSignInButton" class="google-signin-mount" data-redirect="index.html"></div>
+        <p class="form-status" id="googleSignInStatus" role="status"></p>
+
+        <p class="auth-switch">New to Vibecraft? <a href="signup.html">Create an account</a></p>
+      </section>
+    </main>
+
+    <script src="google-config.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="api.js?v=clean-urls-1"></script>
+    <script src="cart-store.js?v=sec-meta-1"></script>
+    <script src="app.js?v=clean-urls-1"></script>
+    <script src="google-auth.js"></script>
+    <script src="login.js?v=admin-path-1"></script>
+  </body>
+</html>

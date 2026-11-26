@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':false;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Review your cart and check out at Vibecraft." />
+    <title>Vibecraft — Cart</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="siteNav">Menu</button>
+      <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+        <button class="nav-close" id="navClose" type="button" aria-label="Close navigation">✕</button>
+        <a href="index.html#top">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+        <a class="mobile-cart-link" href="cart.html" aria-current="page"><span class="cart-link-label"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>Cart</span><span class="cart-count" hidden>0</span></a>
+        <a class="mobile-login-link" href="login.html" data-auth-link>Log in</a>
+      </nav>
+      <div class="nav-search-wrap">
+        <button class="nav-search-toggle" id="navSearchToggle" type="button" aria-label="Search products" aria-expanded="false" aria-controls="productSearchPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button>
+        <div class="nav-search-popover" id="productSearchPanel" hidden>
+          <form class="nav-search-form" id="productSearchForm" role="search">
+            <label class="sr-only" for="productSearchInput">Search products</label>
+            <input id="productSearchInput" type="search" placeholder="Search products" autocomplete="off" />
+            <button class="nav-search-submit" type="submit" aria-label="Search products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button>
+          </form>
+          <p class="nav-search-status" id="productSearchStatus" aria-live="polite">Search the collection by name or type.</p>
+        </div>
+      </div>
+      <div class="cart-hover-wrap">
+        <button class="cart-toggle" id="cartToggle" type="button" aria-label="Open cart" aria-expanded="false" aria-controls="cartDrawer"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg><span class="cart-count" hidden>0</span></button>
+        <div class="cart-preview">
+          <div class="cart-preview-body" id="cartPreviewBody"><p class="cart-empty">Your cart is empty.</p></div>
+          <a class="text-link cart-preview-link" href="cart.html">View cart <span>→</span></a>
+        </div>
+      </div>
+      <div class="account-menu-wrap">
+        <a class="login-link desktop-auth-link" href="login.html" data-auth-link>Log in</a>
+        <div class="customer-account-menu" id="customerAccountMenu" hidden role="menu">
+          <div class="admin-account-info">
+            <strong id="customerAccountName">Account</strong>
+            <span id="customerAccountEmail"></span>
+          </div>
+          <a class="admin-account-item" href="account.html" role="menuitem">My account</a>
+          <a class="admin-account-item" href="account.html#orders" role="menuitem">Order history</a>
+          <a class="admin-account-item" href="account.html#wishlist" role="menuitem">Wishlist</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="customerAccountSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+    <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Close navigation" hidden></button>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart" aria-hidden="true">
+      <div class="cart-drawer-head">
+        <h2>Your cart</h2>
+        <button class="nav-close" id="cartClose" type="button" aria-label="Close cart">✕</button>
+      </div>
+      <div class="cart-drawer-body" id="cartDrawerBody"></div>
+      <div class="cart-drawer-footer">
+        <div class="cart-drawer-total"><span>Subtotal</span><strong id="cartDrawerSubtotal">KES 0</strong></div>
+        <a class="button button-dark auth-submit" href="cart.html">Go to checkout</a>
+      </div>
+    </aside>
+    <button class="menu-backdrop" id="cartBackdrop" type="button" aria-label="Close cart" hidden></button>
+
+    <main>
+      <div class="cart-page section-shell">
+        <p class="eyebrow">Checkout</p>
+        <h1>Your cart.</h1>
+
+        <section class="checkout-receipt" id="checkoutReceipt" hidden aria-live="polite"></section>
+
+        <div class="cart-layout">
+          <section class="cart-items" id="cartItemsList">
+            <p class="cart-empty-state"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading…</span></span></p>
+          </section>
+
+          <aside class="cart-summary">
+            <form class="auth-card" id="checkoutForm" novalidate>
+              <h2>Order details</h2>
+              <div class="field">
+                <label for="checkoutName">Full name</label>
+                <input id="checkoutName" required />
+              </div>
+              <div class="field">
+                <label for="checkoutPhone">Phone</label>
+                <input id="checkoutPhone" type="tel" required />
+              </div>
+              <div class="field">
+                <label for="checkoutEmail">Email <small>(optional)</small></label>
+                <input id="checkoutEmail" type="email" />
+              </div>
+
+              <h3 class="checkout-section-heading">Delivery method</h3>
+              <p class="checkout-section-copy">Choose how you would like to receive your order.</p>
+              <div class="checkout-method-switch" role="group" aria-label="Delivery method">
+                <button class="checkout-method-card is-active" type="button" data-fulfilment-option="delivery" aria-pressed="true">
+                  <span class="checkout-method-icon" aria-hidden="true">🚚</span>
+                  <span class="checkout-method-copy"><strong>Deliver to me</strong><small>Doorstep delivery</small></span>
+                </button>
+                <button class="checkout-method-card" type="button" data-fulfilment-option="pickup" aria-pressed="false">
+                  <span class="checkout-method-icon" aria-hidden="true">📍</span>
+                  <span class="checkout-method-copy"><strong>Pick up at shop</strong><small>Ready in about 30 minutes</small></span>
+                </button>
+              </div>
+              <select id="checkoutFulfilment" class="checkout-fulfilment-select" aria-hidden="true" tabindex="-1">
+                <option value="delivery">Deliver to my address</option>
+                <option value="pickup">Pick up at our location</option>
+              </select>
+              <div class="checkout-pickup-card">
+                <p class="checkout-pickup-note"><strong>Pickup location:</strong> Nairobi CBD · Tom Mboya Street, opposite Imenti House · Rasumal House, 4th floor, Shop 14 — Dlight Gift Shop / Heltz Driving School building.</p>
+              </div>
+
+              <h3 class="checkout-section-heading">Delivery details</h3>
+              <div class="field">
+                <label for="checkoutCounty">County</label>
+                <select id="checkoutCounty" required></select>
+              </div>
+              <div class="field">
+                <label for="checkoutTown">Town / area</label>
+                <input id="checkoutTown" required placeholder="e.g. Kasarani" />
+              </div>
+              <div class="field">
+                <label for="checkoutAddress">Specific address</label>
+                <input id="checkoutAddress" required placeholder="Street, building, house number" />
+              </div>
+              <div class="field">
+                <label for="checkoutLandmark">Landmark <small>(optional)</small></label>
+                <input id="checkoutLandmark" placeholder="e.g. near ABC supermarket" />
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="checkoutDeliveryDate">Preferred date <small>(optional)</small></label>
+                  <input id="checkoutDeliveryDate" type="date" />
+                </div>
+                <div class="field">
+                  <label for="checkoutDeliveryTime">Preferred time <small>(optional)</small></label>
+                  <select id="checkoutDeliveryTime">
+                    <option value="">Any time</option>
+                    <option value="Morning (8am–12pm)">Morning (8am–12pm)</option>
+                    <option value="Afternoon (12pm–4pm)">Afternoon (12pm–4pm)</option>
+                    <option value="Evening (4pm–8pm)">Evening (4pm–8pm)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="checkoutNotes">Notes <small>(optional)</small></label>
+                <textarea id="checkoutNotes"></textarea>
+              </div>
+
+              <h3 class="checkout-section-heading">Pay via M-Pesa</h3>
+              <p class="checkout-payment-details">Paybill: <strong id="checkoutPaybill">522533</strong> &middot; Account: <strong id="checkoutMpesaAccount">8055906</strong></p>
+              <div class="field">
+                <label for="checkoutMpesaCode">M-Pesa transaction code <small>(optional — you can also send it via WhatsApp after paying)</small></label>
+                <input id="checkoutMpesaCode" placeholder="e.g. QGH7XXXXXX" />
+              </div>
+
+              <div class="field checkout-promotion-field">
+                <label for="checkoutPromotionCode">Promotion code <small>(optional)</small></label>
+                <div class="checkout-promotion-row"><input id="checkoutPromotionCode" placeholder="e.g. VIBE10" /><button class="button button-outline" id="applyPromotion" type="button">Apply</button></div>
+                <p class="form-status" id="promotionStatus" role="status"></p>
+              </div>
+
+              <div class="cart-summary-total cart-summary-subtotal"><span>Subtotal</span><strong id="checkoutSubtotal">KES 0</strong></div>
+              <div class="cart-summary-total cart-summary-delivery" id="checkoutDeliveryFeeRow" hidden>
+                <span>Transport fee <small id="checkoutDeliveryFeeLabel"></small></span>
+                <strong id="checkoutDeliveryFee">KES 0</strong>
+              </div>
+              <div class="cart-summary-total cart-summary-discount" id="checkoutDiscountRow" hidden><span>Promotion</span><strong id="checkoutDiscount">− KES 0</strong></div>
+              <div class="cart-summary-total cart-summary-grand-total"><span>Total</span><strong id="checkoutTotal">KES 0</strong></div>
+
+              <button class="button button-dark auth-submit" type="submit">Place order</button>
+              <p class="form-status" id="checkoutStatus" role="status"></p>
+            </form>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer" id="contact">
+      <div class="section-shell footer-columns">
+        <div class="footer-brand">
+          <a class="brand" href="index.html"><span>VIBE</span>CRAFT</a>
+          <p>Big picture energy, made practical.</p>
+          <div class="footer-social"><a href="https://www.instagram.com/vibecraft254?igsh=MTRsNHB5ZTM2dDgxOQ==" target="_blank" rel="noopener noreferrer" aria-label="Vibecraft254 on Instagram"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.97.24 2.43.4a4.4 4.4 0 0 1 1.6 1.04 4.4 4.4 0 0 1 1.04 1.6c.16.46.35 1.26.4 2.43.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.24 1.97-.4 2.43a4.7 4.7 0 0 1-2.64 2.64c-.46.16-1.26.35-2.43.4-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.97-.24-2.43-.4a4.4 4.4 0 0 1-1.6-1.04 4.4 4.4 0 0 1-1.04-1.6c-.16-.46-.35-1.26-.4-2.43C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.24-1.97.4-2.43a4.4 4.4 0 0 1 1.04-1.6 4.4 4.4 0 0 1 1.6-1.04c.46-.16 1.26-.35 2.43-.4C8.42 2.21 8.8 2.2 12 2.2Zm0 1.8c-3.15 0-3.5.01-4.73.07-.96.04-1.48.2-1.82.34-.46.18-.78.39-1.13.73-.34.35-.55.67-.73 1.13-.14.34-.3.86-.34 1.82C3.19 8.5 3.18 8.85 3.18 12s.01 3.5.07 4.73c.04.96.2 1.48.34 1.82.18.46.39.78.73 1.13.35.34.67.55 1.13.73.34.14.86.3 1.82.34 1.23.06 1.58.07 4.73.07s3.5-.01 4.73-.07c.96-.04 1.48-.2 1.82-.34.46-.18.78-.39 1.13-.73.34-.35.55-.67.73-1.13.14-.34.3-.86.34-1.82.06-1.23.07-1.58.07-4.73s-.01-3.5-.07-4.73c-.04-.96-.2-1.48-.34-1.82a3 3 0 0 0-.73-1.13 3 3 0 0 0-1.13-.73c-.34-.14-.86-.3-1.82-.34C15.5 4.01 15.15 4 12 4Zm0 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 1.8a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Zm4.7-2a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1Z"/></svg></a><a href="https://www.tiktok.com/@vibecraft254?_r=1&_t=ZS-98E36EYoUz7" target="_blank" rel="noopener noreferrer" aria-label="Vibecraft254 on TikTok"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 2h-3.2v13.6a2.9 2.9 0 1 1-2.05-2.77V9.5a6.1 6.1 0 1 0 5.25 6.05V8.35a7.6 7.6 0 0 0 4.3 1.33V6.5a4.3 4.3 0 0 1-4.3-4.3Z"/></svg></a><a href="https://wa.me/254707333983" target="_blank" rel="noopener noreferrer" aria-label="Chat with Vibecraft254 on WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.45 1.32 4.95L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2Zm0 18.2a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.09.81.82-3-.2-.31a8.23 8.23 0 1 1 6.96 3.83Zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.24-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.36-.77-1.86-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28Z"/></svg></a></div>
+        </div>
+        <div class="footer-col">
+          <h3 class="footer-col-heading">Contact us</h3>
+          <a href="tel:+254707472897">Call: 0707 472897</a>
+          <a href="https://wa.me/254707472897" target="_blank" rel="noopener noreferrer">WhatsApp: 0707 472897</a>
+        </div>
+        <div class="footer-col">
+          <h3 class="footer-col-heading">Pay via M-Pesa</h3>
+          <p>Paybill: <strong>522533</strong></p>
+          <p>Account: <strong>8055906</strong></p>
+        </div>
+        <div class="footer-col footer-location-col">
+          <h3 class="footer-col-heading"><span class="location-pin" aria-hidden="true">📍</span> Visit us</h3>
+          <p>Rasumal House, 4th floor, Shop 14</p>
+          <p>Opposite Imenti House, Tom Mboya Street</p>
+          <h3 class="footer-col-heading footer-hours-heading">Opening hours</h3>
+          <p>Monday: 8:00 AM – 7:00 PM</p>
+          <p>Tuesday: 8:00 AM – 7:00 PM</p>
+          <p>Wednesday: 8:00 AM – 7:00 PM</p>
+          <p>Thursday: 8:00 AM – 7:00 PM</p>
+          <p>Friday: 8:00 AM – 7:00 PM</p>
+          <p>Saturday: 8:00 AM – 7:00 PM</p>
+        </div>
+      </div>
+      <div class="section-shell footer-bottom"><span>© <span id="year"></span> Vibecraft · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span><a href="index.html#top">Back to top ↑</a></div>
+    </footer>
+
+    <script src="api.js?v=clean-urls-1"></script>
+    <script src="cart-store.js?v=sec-meta-1"></script>
+    <script src="app.js?v=clean-urls-1"></script>
+    <script src="delivery-fees.js?v=delivery-fees-1"></script>
+    <script src="cart.js?v=sec-meta-1"></script>
+  </body>
+</html>

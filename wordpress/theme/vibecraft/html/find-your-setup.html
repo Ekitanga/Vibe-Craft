@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>(function(){try{var t=localStorage.getItem('vibecraft_theme');var d=t?t==='dark':false;if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ask Vibecraft's AI assistant about prices, specs, and which projector setup fits your room." />
+    <title>Vibecraft — Find your setup</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="style.css?v=loading-dots-1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand brand-image" href="index.html" aria-label="Vibecraft254 home"><img class="brand-logo-light" src="assets/vbc-logo.png" alt="Vibecraft254" /><img class="brand-logo-dark" src="assets/vbc-logo-dark.png" alt="Vibecraft254" /></a>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="siteNav">Menu</button>
+      <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+        <button class="nav-close" id="navClose" type="button" aria-label="Close navigation">✕</button>
+        <a href="index.html#top">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+        <a class="mobile-cart-link" href="cart.html"><span class="cart-link-label"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg>Cart</span><span class="cart-count" hidden>0</span></a>
+        <a class="mobile-login-link" href="login.html" data-auth-link>Log in</a>
+      </nav>
+      <div class="nav-search-wrap">
+        <button class="nav-search-toggle" id="navSearchToggle" type="button" aria-label="Search products" aria-expanded="false" aria-controls="productSearchPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        </button>
+        <div class="nav-search-popover" id="productSearchPanel" hidden>
+          <form class="nav-search-form" id="productSearchForm" role="search">
+            <label class="sr-only" for="productSearchInput">Search products</label>
+            <input id="productSearchInput" type="search" placeholder="Search products" autocomplete="off" />
+            <button class="nav-search-submit" type="submit" aria-label="Search products">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+            </button>
+          </form>
+          <p class="nav-search-status" id="productSearchStatus" aria-live="polite">Search the collection by name or type.</p>
+        </div>
+      </div>
+      <div class="cart-hover-wrap">
+        <button class="cart-toggle" id="cartToggle" type="button" aria-label="Open cart" aria-expanded="false" aria-controls="cartDrawer"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.62 12.06a2 2 0 0 0 2 1.54h8.2a2 2 0 0 0 1.96-1.6l1.65-8.4H6.1"/></svg><span class="cart-count" hidden>0</span></button>
+        <div class="cart-preview">
+          <div class="cart-preview-body" id="cartPreviewBody"><p class="cart-empty">Your cart is empty.</p></div>
+          <a class="text-link cart-preview-link" href="cart.html">View cart <span>→</span></a>
+        </div>
+      </div>
+      <div class="account-menu-wrap">
+        <a class="login-link desktop-auth-link" href="login.html" data-auth-link>Log in</a>
+        <div class="customer-account-menu" id="customerAccountMenu" hidden role="menu">
+          <div class="admin-account-info">
+            <strong id="customerAccountName">Account</strong>
+            <span id="customerAccountEmail"></span>
+          </div>
+          <a class="admin-account-item" href="account.html" role="menuitem">My account</a>
+          <a class="admin-account-item" href="account.html#orders" role="menuitem">Order history</a>
+          <a class="admin-account-item" href="account.html#wishlist" role="menuitem">Wishlist</a>
+          <div class="admin-account-divider"></div>
+          <button class="admin-account-item is-danger" id="customerAccountSignOut" type="button" role="menuitem">Sign out</button>
+        </div>
+      </div>
+    </header>
+    <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Close navigation" hidden></button>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart" aria-hidden="true">
+      <div class="cart-drawer-head">
+        <h2>Your cart</h2>
+        <button class="nav-close" id="cartClose" type="button" aria-label="Close cart">✕</button>
+      </div>
+      <div class="cart-drawer-body" id="cartDrawerBody"></div>
+      <div class="cart-drawer-footer">
+        <div class="cart-drawer-total"><span>Subtotal</span><strong id="cartDrawerSubtotal">KES 0</strong></div>
+        <a class="button button-dark auth-submit" href="cart.html">Go to checkout</a>
+      </div>
+    </aside>
+    <button class="menu-backdrop" id="cartBackdrop" type="button" aria-label="Close cart" hidden></button>
+
+    <main>
+      <div class="ai-page section-shell">
+        <div class="ai-sheet-head">
+          <button class="ai-sheet-icon" id="aiNewQuestion" type="button" aria-label="Start a new question">+</button>
+          <strong><span class="ai-sheet-orb ai-orb ai-orb-avatar" aria-hidden="true"></span>Ask me <span aria-hidden="true">+</span></strong>
+          <a class="ai-sheet-icon" href="index.html" aria-label="Close assistant">x</a>
+        </div>
+        <div class="ai-intro">
+          <h1>Any questions about <em>this one?</em></h1>
+          <p class="ai-sub">Let us find what you need. I am powered by AI and I might make mistakes.</p>
+        </div>
+
+        <div class="ai-chat">
+          <div class="ai-messages" id="aiMessages"></div>
+
+          <div class="ai-suggestions" id="aiSuggestions">
+            <button type="button" class="ai-chip">What's your cheapest projector?</button>
+            <button type="button" class="ai-chip">What works best in a bright room?</button>
+            <button type="button" class="ai-chip">What's good for movie nights outdoors?</button>
+            <button type="button" class="ai-chip">Compare two projectors for me</button>
+            <button type="button" class="ai-chip">Where is your shop located?</button>
+            <button type="button" class="ai-chip">What number can I call or WhatsApp?</button>
+            <button type="button" class="ai-chip">Do you offer delivery or shop collection?</button>
+            <button type="button" class="ai-chip">How can I pay for my order?</button>
+          </div>
+
+          <section class="ai-compare-tools" id="aiCompareTools" aria-labelledby="aiCompareHeading">
+            <div class="ai-compare-heading"><span class="ai-orb ai-orb-avatar" aria-hidden="true"></span><div><p class="eyebrow">Compare products</p><strong id="aiCompareHeading">Which one is better?</strong></div></div>
+            <span class="compare-loading loading-state" id="aiCompareLoading"><span class="loading-dot" aria-hidden="true"></span><span>Loading products…</span></span>
+            <div class="ai-compare-fields">
+              <label>First product<select id="aiCompareFirst" aria-label="First product to compare"><option value="">Loading products...</option></select></label>
+              <span class="ai-compare-vs" aria-hidden="true">vs</span>
+              <label>Second product<select id="aiCompareSecond" aria-label="Second product to compare"><option value="">Loading products...</option></select></label>
+              <button class="button button-dark" id="aiCompareButton" type="button" disabled>Compare <span>&#8594;</span></button>
+            </div>
+          </section>
+
+          <div class="ai-comparison-result" id="aiComparisonResult" hidden aria-live="polite"></div>
+
+          <form class="ai-input-row" id="aiForm">
+            <input id="aiInput" type="text" placeholder="Ask about products, delivery, location, or contact…" autocomplete="off" maxlength="800" required />
+            <button class="button button-dark" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <script src="api.js?v=clean-urls-1"></script>
+    <script src="cart-store.js?v=sec-meta-1"></script>
+    <script src="app.js?v=clean-urls-1"></script>
+    <script src="find-your-setup.js?v=sec-meta-1"></script>
+  </body>
+</html>

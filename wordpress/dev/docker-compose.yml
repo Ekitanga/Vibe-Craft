@@ -1,0 +1,43 @@
+# Local WordPress for building and testing the Vibecraft theme + plugin.
+#   docker compose -p vibecraft-wp up -d   → http://localhost:8090
+name: vibecraft-wp
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: wp-local-only
+      MARIADB_ROOT_PASSWORD: root-local-only
+    volumes: [db:/var/lib/mysql]
+  wordpress:
+    image: wordpress:php8.3-apache
+    depends_on: [db]
+    ports: ["127.0.0.1:8090:80"]
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp-local-only
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - wp:/var/www/html
+      - ../theme/vibecraft:/var/www/html/wp-content/themes/vibecraft
+      - ../plugin/vibecraft-core:/var/www/html/wp-content/plugins/vibecraft-core
+  cli:
+    image: wordpress:cli-php8.3
+    depends_on: [db, wordpress]
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp-local-only
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp:/var/www/html
+      - ../theme/vibecraft:/var/www/html/wp-content/themes/vibecraft
+      - ../plugin/vibecraft-core:/var/www/html/wp-content/plugins/vibecraft-core
+    entrypoint: ["sleep", "infinity"]
+volumes:
+  db: {}
+  wp: {}
