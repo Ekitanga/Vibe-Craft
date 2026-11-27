@@ -96,6 +96,10 @@ class VC_Importer {
 		foreach ( $categories as $category ) {
 			$slug = sanitize_title( $category['id'] );
 			$term = get_term_by( 'slug', $slug, 'product_cat' );
+			if ( ! $term ) {
+				// Same category under another address (e.g. "projector-screens"): adopt it.
+				$term = get_term_by( 'name', $category['name'], 'product_cat' );
+			}
 			$args = array( 'slug' => $slug, 'description' => (string) ( $category['description'] ?? '' ) );
 			if ( $term ) {
 				wp_update_term( $term->term_id, 'product_cat', array_merge( $args, array( 'name' => $category['name'] ) ) );
@@ -157,7 +161,14 @@ class VC_Importer {
 
 		$legacy   = (string) $item['id'];
 		$existing = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'meta_key' => '_vc_legacy_id', 'meta_value' => $legacy, 'fields' => 'ids', 'posts_per_page' => 1 ) );
-		$product  = $existing ? wc_get_product( $existing[0] ) : new WC_Product_Simple();
+		// Products the previous site copied from this WordPress store are "live-<WordPress ID>":
+		// update that same product (keeps its ID, links, reviews and order history).
+		if ( ! $existing && preg_match( '/^live-(\d+)$/', $legacy, $match ) && 'product' === get_post_type( (int) $match[1] ) ) {
+			$existing = array( (int) $match[1] );
+		}
+		$product = $existing ? wc_get_product( $existing[0] ) : new WC_Product_Simple();
+		// The store's own gallery photos (kept after the imported ones).
+		$own_gallery = $existing ? $product->get_gallery_image_ids() : array();
 
 		$price   = (float) $item['price'];
 		$compare = isset( $item['compareAtPrice'] ) ? (float) $item['compareAtPrice'] : 0;
@@ -186,11 +197,14 @@ class VC_Importer {
 				$attachment_ids[] = $id;
 			}
 		}
-		$photo_count = count( $attachment_ids );
 		if ( $attachment_ids ) {
 			$product->set_image_id( array_shift( $attachment_ids ) );
-			$product->set_gallery_image_ids( $attachment_ids );
+			// The store's own gallery is kept only where the previous site had just the main
+			// photo; otherwise its gallery is already a copy of these and would duplicate.
+			$keep_own = count( (array) ( $item['images'] ?? array() ) ) <= 1 ? $own_gallery : array();
+			$product->set_gallery_image_ids( array_values( array_unique( array_merge( $attachment_ids, $keep_own ) ) ) );
 		}
+		$photo_count = ( $product->get_image_id() ? 1 : 0 ) + count( $product->get_gallery_image_ids() );
 		$id = $product->save();
 
 		update_post_meta( $id, '_vc_legacy_id', $legacy );

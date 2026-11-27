@@ -189,8 +189,18 @@ class VC_Products {
 		$key  = '';
 		if ( 'product' === $path && isset( $_GET['id'] ) ) {
 			$key = sanitize_text_field( wp_unslash( $_GET['id'] ) );
-		} elseif ( is_404() && preg_match( '#^products/([^/]+)$#', $path, $match ) ) {
+		} elseif ( is_404() && preg_match( '#^products?/([^/]+)$#', $path, $match ) ) {
+			// /products/<id or old id>, and the old WooCommerce address /product/<old-name>/.
 			$key = rawurldecode( $match[1] );
+			if ( ! self::find( $key ) ) {
+				$renamed = get_posts( array( 'post_type' => 'product', 'post_status' => 'publish', 'meta_key' => '_wp_old_slug', 'meta_value' => sanitize_title( $key ), 'fields' => 'ids', 'posts_per_page' => 1 ) );
+				if ( $renamed ) {
+					$key = (string) $renamed[0];
+				}
+			}
+		} elseif ( is_404() && preg_match( '#^product-category/([^/]+)#', $path, $match ) ) {
+			wp_safe_redirect( home_url( '/shop' ), 301 );
+			exit;
 		} elseif ( 'product' === $path ) {
 			wp_safe_redirect( home_url( '/shop/' ), 301 );
 			exit;
