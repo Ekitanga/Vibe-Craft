@@ -1,0 +1,22 @@
+# Keeps vibecraft254.com's scheduled tasks running (safe auto-updates, Meta catalog sync,
+# WooCommerce background jobs). WordPress only runs them when visited; a quiet shop behind
+# a page cache can go days without that, so this pings the task runner every 15 minutes.
+name: WordPress heartbeat
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  wp-cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run due WordPress tasks
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "https://vibecraft254.com/wp-cron.php?doing_wp_cron=$(date +%s)")
+          echo "wp-cron.php answered HTTP $code"
+          # Not a failure while DNS is being switched; the next run catches up.

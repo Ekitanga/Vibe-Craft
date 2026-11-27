@@ -24,7 +24,11 @@ class VC_AI {
 			'mpesa'         => 'M-Pesa Paybill ' . $settings['paybill'] . ', Account ' . $settings['mpesaAccount'] . '.',
 			'delivery'      => "Same-day delivery in Nairobi to the customer's doorstep and next-day delivery countrywide.",
 			'collection'    => 'Shop collection is available at checkout and can reduce the wait time to about 30 minutes.',
-			'payment'       => 'Pay on delivery is available only in Nairobi and immediate environs. Upfront payment applies outside Nairobi.',
+			'payment'       => trim(
+				'M-Pesa paybill is always available.'
+				. ( $settings['payOnDelivery'] && $settings['codCounties'] ? ' Pay on delivery (cash or M-Pesa to the rider) is available in: ' . implode( ', ', $settings['codCounties'] ) . '; elsewhere payment is upfront via M-Pesa.' : ' Payment is upfront via M-Pesa.' )
+				. ( $settings['payAtShop'] ? ' Pickup orders can be paid at the shop.' : '' )
+			),
 			'pricing'       => 'All prices are VAT exclusive.',
 		);
 		if ( ! empty( $settings['contactEmail'] ) ) {

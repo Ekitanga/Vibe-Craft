@@ -27,6 +27,9 @@ require_once VC_CORE_DIR . 'includes/class-vc-rest.php';
 require_once VC_CORE_DIR . 'includes/class-vc-admin.php';
 require_once VC_CORE_DIR . 'includes/class-vc-importer.php';
 require_once VC_CORE_DIR . 'includes/class-vc-security.php';
+require_once VC_CORE_DIR . 'includes/class-vc-updates.php';
+require_once VC_CORE_DIR . 'includes/class-vc-dashboard.php';
+require_once VC_CORE_DIR . 'includes/class-vc-performance.php';
 
 add_action( 'plugins_loaded', function () {
 	if ( ! class_exists( 'WooCommerce' ) ) {
@@ -48,6 +51,9 @@ add_action( 'plugins_loaded', function () {
 	VC_Admin::init();
 	VC_Importer::init();
 	VC_Security::init();
+	VC_Updates::init();
+	VC_Dashboard::init();
+	VC_Performance::init();
 } );
 
 // Pages, permalinks and WooCommerce options the theme expects.

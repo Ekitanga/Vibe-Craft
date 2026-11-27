@@ -28,6 +28,44 @@
   var products = [];
   var customerAccount = null;
   var LAST_ORDER_KEY = "vibecraft_last_order";
+  // Payment choice (shown when the store offers pay on delivery / pay at the shop).
+  var paymentSwitch = document.getElementById("checkoutPaymentSwitch");
+  var paymentHeading = document.getElementById("checkoutPaymentHeading");
+  var paymentOptionCards = Array.prototype.slice.call(document.querySelectorAll("[data-payment-option]"));
+  var mpesaPanel = document.getElementById("checkoutMpesaPanel");
+  var paymentMethod = "mpesa";
+
+  function syncPaymentOptions() {
+    var options = window.VibecraftDelivery && window.VibecraftDelivery.getPaymentOptions ? window.VibecraftDelivery.getPaymentOptions() : null;
+    if (!paymentSwitch || !options || (!options.payOnDelivery && !options.payAtShop)) {
+      if (paymentSwitch) paymentSwitch.hidden = true;
+      paymentMethod = "mpesa";
+      if (mpesaPanel) mpesaPanel.hidden = false;
+      return;
+    }
+    var isPickup = checkoutFulfilment && checkoutFulfilment.value === "pickup";
+    var county = (document.getElementById("checkoutCounty") || {}).value || "";
+    var counties = options.codCounties || [];
+    var codAllowed = isPickup ? Boolean(options.payAtShop) : Boolean(options.payOnDelivery) && counties.indexOf(county) !== -1;
+    var codCard = paymentOptionCards.filter(function (card) { return card.getAttribute("data-payment-option") === "cod"; })[0];
+    document.getElementById("checkoutCodTitle").textContent = isPickup ? "Pay at the shop" : "Pay on delivery";
+    document.getElementById("checkoutCodNote").textContent = isPickup
+      ? "Cash or M-Pesa when you collect"
+      : codAllowed ? "Cash or M-Pesa to the rider" : "Available in " + (counties.length ? counties.join(", ") : "selected areas");
+    if (codCard) {
+      codCard.disabled = !codAllowed;
+      codCard.classList.toggle("is-disabled", !codAllowed);
+    }
+    if (!codAllowed && paymentMethod === "cod") paymentMethod = "mpesa";
+    paymentOptionCards.forEach(function (card) {
+      var active = card.getAttribute("data-payment-option") === paymentMethod;
+      card.classList.toggle("is-active", active);
+      card.setAttribute("aria-pressed", String(active));
+    });
+    paymentSwitch.hidden = false;
+    if (paymentHeading) paymentHeading.textContent = "Payment";
+    if (mpesaPanel) mpesaPanel.hidden = paymentMethod !== "mpesa";
+  }
   var receiptDateFormatter = new Intl.DateTimeFormat("en-KE", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -103,6 +141,7 @@
       option.setAttribute("aria-pressed", String(isActive));
     });
     if (checkoutPickupCard) checkoutPickupCard.classList.toggle("is-visible", isPickup);
+    if (typeof syncPaymentOptions === "function") window.setTimeout(syncPaymentOptions, 0);
 
     if (isPickup) {
       if (!pickupDeliveryDraft) {
@@ -197,7 +236,9 @@
       '<div class="receipt-total"><span>Total</span><strong>',
       formatPrice(order.total),
       '</strong></div><p class="receipt-payment"><strong>Payment:</strong> ',
-      order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
+      order.paymentMethod === "cod"
+        ? (pickupRequested ? "Pay at the shop when you collect" : "Pay on delivery (cash or M-Pesa to the rider)")
+        : order.mpesaCode ? "M-Pesa code " + escapeHtml(order.mpesaCode) : "M-Pesa Paybill 522533, Account 8055906",
       '</p><div class="receipt-actions"><button class="button button-dark" type="button" id="printReceipt">Print / save PDF</button>',
       '<a class="button button-outline" href="' + (window.VibecraftContact ? window.VibecraftContact.toWhatsAppUrl(whatsappText) : "https://wa.me/254707472897?text=" + encodeURIComponent(whatsappText)) + '" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div></div>',
     ].join("");
@@ -350,7 +391,8 @@
         notes: isPickup
           ? ["Pickup requested at Vibecraft location.", notesValue].filter(Boolean).join(" ")
           : notesValue || undefined,
-        mpesaCode: document.getElementById("checkoutMpesaCode").value.trim() || undefined,
+        mpesaCode: paymentMethod === "mpesa" ? document.getElementById("checkoutMpesaCode").value.trim() || undefined : undefined,
+        paymentMethod: paymentSwitch && !paymentSwitch.hidden ? paymentMethod : undefined,
         promotionCode: appliedPromotion ? appliedPromotion.promotion.code : undefined,
         fulfillment: isPickup ? "pickup" : "delivery",
         attribution: window.VibecraftMeta ? window.VibecraftMeta.getAttribution() : undefined,
@@ -441,7 +483,16 @@
     populateCounties();
     setDeliveryDateMin();
     checkoutCounty.addEventListener("change", refreshCheckoutTotals);
+    checkoutCounty.addEventListener("change", syncPaymentOptions);
     window.addEventListener("vibecraft:delivery-settings", refreshCheckoutTotals);
+    window.addEventListener("vibecraft:delivery-settings", syncPaymentOptions);
+    paymentOptionCards.forEach(function (card) {
+      card.addEventListener("click", function () {
+        if (card.disabled) return;
+        paymentMethod = card.getAttribute("data-payment-option");
+        syncPaymentOptions();
+      });
+    });
     if (checkoutFulfilment) checkoutFulfilment.addEventListener("change", syncFulfilmentFields);
     checkoutFulfilmentOptions.forEach(function (option) {
       option.addEventListener("click", function () {

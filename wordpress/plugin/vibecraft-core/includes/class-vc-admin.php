@@ -79,15 +79,21 @@ class VC_Admin {
 			}
 		} elseif ( 'delivery' === $tab ) {
 			self::text_row( 'freeDeliveryMinimum', 'Free delivery from (KES)', (string) $s['freeDeliveryMinimum'], 'number', '0 = never free.' );
-			echo '</tbody></table><h2>Fee per county</h2><p>Untick a county to stop delivering there. Pickup at the shop is always free.</p><table class="widefat striped" style="max-width:560px"><thead><tr><th>County</th><th>Fee (KES)</th><th>Deliver</th></tr></thead><tbody>';
+			printf(
+				'<tr><th scope="row">Payment options</th><td><p>M-Pesa paybill is always offered (orders wait as <strong>Pending payment</strong> until you confirm).</p><label><input type="checkbox" name="payOnDelivery" value="1" %1$s> Pay on delivery — in the counties ticked below (orders go to <strong>Processing</strong>)</label><br><label><input type="checkbox" name="payAtShop" value="1" %2$s> Pay at the shop — for pickup orders</label></td></tr>',
+				checked( $s['payOnDelivery'], true, false ),
+				checked( $s['payAtShop'], true, false )
+			);
+			echo '</tbody></table><h2>Fee per county</h2><p>Untick "Deliver" to stop delivering to a county. Pickup at the shop is always free.</p><table class="widefat striped" style="max-width:640px"><thead><tr><th>County</th><th>Fee (KES)</th><th>Deliver</th><th>Pay on delivery</th></tr></thead><tbody>';
 			foreach ( $s['deliveryFees'] as $county => $fee ) {
 				$key = md5( $county );
 				printf(
-					'<tr><td>%1$s<input type="hidden" name="county[%2$s]" value="%1$s"></td><td><input type="number" min="0" step="1" name="fee[%2$s]" value="%3$s" style="width:120px"></td><td><input type="checkbox" name="available[%2$s]" value="1" %4$s></td></tr>',
+					'<tr><td>%1$s<input type="hidden" name="county[%2$s]" value="%1$s"></td><td><input type="number" min="0" step="1" name="fee[%2$s]" value="%3$s" style="width:120px"></td><td><input type="checkbox" name="available[%2$s]" value="1" %4$s></td><td><input type="checkbox" name="cod[%2$s]" value="1" %5$s></td></tr>',
 					esc_html( $county ),
 					esc_attr( $key ),
 					esc_attr( (string) $fee ),
-					checked( false !== ( $s['deliveryAvailability'][ $county ] ?? true ), true, false )
+					checked( false !== ( $s['deliveryAvailability'][ $county ] ?? true ), true, false ),
+					checked( in_array( $county, $s['codCounties'], true ), true, false )
 				);
 			}
 		} elseif ( 'ai' === $tab ) {
@@ -100,7 +106,6 @@ class VC_Admin {
 			self::text_row( 'aiMessagesPer5Min', 'Vibe AI messages per 5 minutes per connection', (string) $p['aiMessagesPer5Min'], 'number', 'Protects your Gemini quota.' );
 			self::text_row( 'loginAttempts', 'Wrong passwords before a 15-minute lock', (string) $p['loginAttempts'], 'number' );
 			self::text_row( 'signupsPerHourPerIp', 'New accounts per hour per connection', (string) $p['signupsPerHourPerIp'], 'number' );
-			self::text_row( 'unpaidOrderExpiryHours', 'Cancel unpaid orders after (hours)', (string) $p['unpaidOrderExpiryHours'], 'number', 'Orders still On hold with no M-Pesa code are cancelled and their stock returned. Orders where the customer entered a code are never cancelled automatically. 0 = never.' );
 		}
 		echo '</tbody></table>';
 		submit_button( 'Save' );
@@ -133,6 +138,7 @@ class VC_Admin {
 		} elseif ( 'delivery' === $tab ) {
 			$fees      = array();
 			$available = array();
+			$cod       = array();
 			foreach ( (array) ( $in['county'] ?? array() ) as $key => $county ) {
 				$county = sanitize_text_field( $county );
 				if ( '' === $county ) {
@@ -140,11 +146,17 @@ class VC_Admin {
 				}
 				$fees[ $county ]      = max( 0, (int) ( $in['fee'][ $key ] ?? 0 ) );
 				$available[ $county ] = ! empty( $in['available'][ $key ] );
+				if ( ! empty( $in['cod'][ $key ] ) ) {
+					$cod[] = $county;
+				}
 			}
 			VC_Settings::update( array(
 				'deliveryFees'         => $fees,
 				'deliveryAvailability' => $available,
 				'freeDeliveryMinimum'  => max( 0, (float) ( $in['freeDeliveryMinimum'] ?? 0 ) ),
+				'payOnDelivery'        => ! empty( $in['payOnDelivery'] ),
+				'payAtShop'            => ! empty( $in['payAtShop'] ),
+				'codCounties'          => $cod,
 			) );
 		} elseif ( 'ai' === $tab ) {
 			$values = array(
@@ -158,7 +170,7 @@ class VC_Admin {
 			VC_Settings::update_private( $values );
 		} elseif ( 'security' === $tab ) {
 			$values = array();
-			foreach ( array( 'ordersPerHourPerIp', 'pendingOrdersPerPhone', 'aiMessagesPer5Min', 'loginAttempts', 'signupsPerHourPerIp', 'unpaidOrderExpiryHours' ) as $key ) {
+			foreach ( array( 'ordersPerHourPerIp', 'pendingOrdersPerPhone', 'aiMessagesPer5Min', 'loginAttempts', 'signupsPerHourPerIp' ) as $key ) {
 				$values[ $key ] = max( 0, (int) ( $in[ $key ] ?? 0 ) );
 			}
 			VC_Settings::update_private( $values );

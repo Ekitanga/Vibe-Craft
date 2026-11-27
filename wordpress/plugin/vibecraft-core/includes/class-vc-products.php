@@ -49,7 +49,8 @@ class VC_Products {
 		$images = array();
 		$ids    = array_filter( array_merge( array( $product->get_image_id() ), $product->get_gallery_image_ids() ) );
 		foreach ( $ids as $attachment_id ) {
-			$url = wp_get_attachment_url( $attachment_id );
+			// Display size (1024px, WebP when available) instead of the full original.
+			$url = wp_get_attachment_image_url( $attachment_id, 'large' ) ?: wp_get_attachment_url( $attachment_id );
 			if ( $url ) {
 				$images[] = $url;
 			}
@@ -61,6 +62,16 @@ class VC_Products {
 			$value = get_post_meta( $id, $meta, true );
 			if ( '' !== $value && empty( $specs[ $spec ] ) ) {
 				$specs[ $spec ] = $value;
+			}
+		}
+		// Card/hero images: serve the display-size (WebP) version, not the full original.
+		foreach ( array( 'cardMobileImage' => 'medium_large', 'cardDesktopImage' => 'large' ) as $spec => $size ) {
+			if ( ! empty( $specs[ $spec ] ) && is_string( $specs[ $spec ] ) ) {
+				$attachment = self::attachment_for_url( $specs[ $spec ] );
+				$resized    = $attachment ? wp_get_attachment_image_url( $attachment, $size ) : '';
+				if ( $resized ) {
+					$specs[ $spec ] = $resized;
+				}
 			}
 		}
 		$videos = self::lines( get_post_meta( $id, '_vc_videos', true ) );
@@ -112,6 +123,26 @@ class VC_Products {
 		);
 	}
 
+	/** Media-library ID for an uploaded image URL, even if its format changed (e.g. .jpg → .webp). */
+	public static function attachment_for_url( $url ) {
+		static $cache = array();
+		if ( isset( $cache[ $url ] ) ) {
+			return $cache[ $url ];
+		}
+		$id = attachment_url_to_postid( $url );
+		if ( ! $id ) {
+			$stem = pathinfo( (string) wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_FILENAME );
+			if ( $stem && preg_match( '/^[A-Za-z0-9_-]+$/', $stem ) ) {
+				global $wpdb;
+				$id = (int) $wpdb->get_var( $wpdb->prepare(
+					"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s LIMIT 1",
+					'%/' . $wpdb->esc_like( $stem ) . '.%'
+				) );
+			}
+		}
+		return $cache[ $url ] = (int) $id;
+	}
+
 	public static function meta_content_id( $product ) {
 		if ( class_exists( 'WC_Facebookcommerce_Utils' ) && method_exists( 'WC_Facebookcommerce_Utils', 'get_fb_retailer_id' ) ) {
 			return (string) WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
@@ -153,7 +184,15 @@ class VC_Products {
 		if ( isset( $args['featured'] ) && '' !== $args['featured'] ) {
 			$query['featured'] = filter_var( $args['featured'], FILTER_VALIDATE_BOOLEAN );
 		}
-		return array_values( array_filter( array_map( array( __CLASS__, 'to_api' ), wc_get_products( $query ) ) ) );
+		// Cached until a product, price, stock level or category changes.
+		$key    = VC_Performance::cache_key( $query );
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		$products = array_values( array_filter( array_map( array( __CLASS__, 'to_api' ), wc_get_products( $query ) ) ) );
+		set_transient( $key, $products, 6 * HOUR_IN_SECONDS );
+		return $products;
 	}
 
 	/** Find by WooCommerce ID, slug or the previous site's ID. */

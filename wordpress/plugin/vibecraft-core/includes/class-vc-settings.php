@@ -61,6 +61,10 @@ class VC_Settings {
 				'youtube'   => '',
 			),
 			'freeDeliveryMinimum'  => 0,
+			// Payment choices at checkout (M-Pesa paybill is always offered).
+			'payOnDelivery'        => true,
+			'payAtShop'            => true,
+			'codCounties'          => array( 'Nairobi', 'Kiambu' ),
 		);
 	}
 
@@ -74,7 +78,6 @@ class VC_Settings {
 			'aiMessagesPer5Min'     => 20,
 			'loginAttempts'         => 8,
 			'signupsPerHourPerIp'   => 10,
-			'unpaidOrderExpiryHours' => 48,
 		);
 	}
 
@@ -90,6 +93,15 @@ class VC_Settings {
 				$all['deliveryAvailability'][ $county ] = true;
 			}
 		}
+		$all['codCounties']         = array_values( array_filter( (array) $all['codCounties'] ) );
+		$all['payOnDelivery']       = (bool) $all['payOnDelivery'];
+		$all['payAtShop']           = (bool) $all['payAtShop'];
+		// What the checkout needs to show the payment choice.
+		$all['paymentOptions']      = array(
+			'payOnDelivery' => $all['payOnDelivery'],
+			'payAtShop'     => $all['payAtShop'],
+			'codCounties'   => $all['codCounties'],
+		);
 		$all['lowStockThreshold']   = (int) $all['lowStockThreshold'];
 		$all['freeDeliveryMinimum'] = (float) $all['freeDeliveryMinimum'];
 		return $all;
@@ -126,6 +138,15 @@ class VC_Settings {
 			return 0;
 		}
 		return (float) ( $settings['deliveryFees'][ $county ] ?? 0 );
+	}
+
+	/** Is "pay on delivery / at the shop" allowed for this order? */
+	public static function cod_allowed( $is_pickup, $county ) {
+		$settings = self::get();
+		if ( $is_pickup ) {
+			return $settings['payAtShop'];
+		}
+		return $settings['payOnDelivery'] && in_array( trim( (string) $county ), $settings['codCounties'], true );
 	}
 
 	public static function delivers_to( $county ) {

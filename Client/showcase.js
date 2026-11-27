@@ -48,7 +48,7 @@
     '  </div>',
     '  <div class="store-location-actions">',
     '    <button class="store-video-preview store-directions-trigger" id="storeDirectionsOpen" type="button" aria-label="Watch direction video">',
-    '      <video class="store-video-preview-video" id="storeDirectionsPreviewVideo" muted playsinline preload="auto" tabindex="-1" aria-hidden="true">',
+    '      <video class="store-video-preview-video" id="storeDirectionsPreviewVideo" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true">',
     '        <source src="assets/store-directions.mp4" type="video/mp4" />',
     '      </video>',
     '      <span class="store-video-preview-overlay"><span class="store-video-play" aria-hidden="true">▶</span><span>Watch directions</span></span>',

@@ -18,17 +18,16 @@ class VC_Orders {
 		add_action( 'manage_shop_order_posts_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
 		// Paybill instructions in the customer's "order received" email.
 		add_action( 'woocommerce_email_before_order_table', array( __CLASS__, 'email_instructions' ), 10, 4 );
-		// Unpaid storefront orders are cancelled after a while (stock goes back on sale).
-		add_action( 'vc_expire_unpaid_orders', array( __CLASS__, 'expire_unpaid' ) );
+		// Orders are never cancelled automatically (owner's decision); clear any old schedule.
 		add_action( 'init', function () {
-			if ( ! wp_next_scheduled( 'vc_expire_unpaid_orders' ) ) {
-				wp_schedule_event( time() + 600, 'hourly', 'vc_expire_unpaid_orders' );
+			if ( wp_next_scheduled( 'vc_expire_unpaid_orders' ) ) {
+				wp_clear_scheduled_hook( 'vc_expire_unpaid_orders' );
 			}
 		} );
 	}
 
 	public static function email_instructions( $order, $sent_to_admin, $plain_text, $email = null ) {
-		if ( $sent_to_admin || ! $order instanceof WC_Order || 'vc_mpesa_paybill' !== $order->get_payment_method() || ! $order->has_status( 'on-hold' ) ) {
+		if ( $sent_to_admin || ! $order instanceof WC_Order || 'vc_mpesa_paybill' !== $order->get_payment_method() || ! $order->has_status( array( 'pending', 'on-hold' ) ) ) {
 			return;
 		}
 		$settings = VC_Settings::get();
@@ -49,27 +48,6 @@ class VC_Orders {
 			echo '<p style="margin:0 0 6px">' . esc_html( $line ) . '</p>';
 		}
 		echo '</div>';
-	}
-
-	/** Storefront orders still on hold with no M-Pesa code after N hours are cancelled. */
-	public static function expire_unpaid() {
-		$hours = (int) VC_Settings::get_private( 'unpaidOrderExpiryHours' );
-		if ( $hours <= 0 ) {
-			return;
-		}
-		$orders = wc_get_orders( array(
-			'status'       => array( 'on-hold', 'pending' ),
-			'created_via'  => 'vibecraft-storefront',
-			'date_created' => '<' . ( time() - $hours * HOUR_IN_SECONDS ),
-			'limit'        => 50,
-		) );
-		foreach ( $orders as $order ) {
-			if ( $order->get_meta( '_vc_mpesa_code' ) ) {
-				continue; // the customer says they paid: a person checks these
-			}
-			// Cancelling restores the reserved stock (WooCommerce).
-			$order->update_status( 'cancelled', 'Cancelled automatically: no M-Pesa payment within ' . $hours . ' hours.' );
-		}
 	}
 
 	private static function fail( $message, $status = 400 ) {
@@ -179,7 +157,12 @@ class VC_Orders {
 		if ( strlen( $notes ) > 1000 ) {
 			self::fail( 'Notes are too long (maximum 1000 characters).' );
 		}
-		$mpesa = strtoupper( preg_replace( '/\s+/', '', self::text( $payload['mpesaCode'] ?? '', 30 ) ) );
+		// Payment: M-Pesa paybill (default) or pay on delivery / at the shop.
+		$pay_cod = 'cod' === ( $payload['paymentMethod'] ?? '' );
+		if ( $pay_cod && ! VC_Settings::cod_allowed( $is_pickup, $county ) ) {
+			self::fail( $is_pickup ? 'Paying at the shop is not available right now. Please pay via M-Pesa.' : 'Pay on delivery is not available in ' . $county . '. Please pay via M-Pesa.' );
+		}
+		$mpesa = $pay_cod ? '' : strtoupper( preg_replace( '/\s+/', '', self::text( $payload['mpesaCode'] ?? '', 30 ) ) );
 		if ( $mpesa && ! preg_match( '/^[A-Z0-9]{8,12}$/', $mpesa ) ) {
 			self::fail( 'The M-Pesa code looks invalid. It is usually 10 letters and numbers.' );
 		}
@@ -272,8 +255,13 @@ class VC_Orders {
 			$order->add_item( $fee );
 		}
 
-		$order->set_payment_method( 'vc_mpesa_paybill' );
-		$order->set_payment_method_title( 'M-Pesa Paybill' );
+		if ( $pay_cod ) {
+			$order->set_payment_method( 'cod' );
+			$order->set_payment_method_title( $is_pickup ? 'Pay at the shop' : 'Pay on delivery' );
+		} else {
+			$order->set_payment_method( 'vc_mpesa_paybill' );
+			$order->set_payment_method_title( 'M-Pesa Paybill' );
+		}
 		$order->set_customer_ip_address( $ip );
 		$order->set_customer_user_agent( isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 400 ) : '' );
 		if ( $notes ) {
@@ -298,11 +286,56 @@ class VC_Orders {
 		}
 		$order->save();
 
-		// Awaiting the shop's payment confirmation. Reserves stock and emails the shop.
-		$order->update_status( 'on-hold', $mpesa ? 'M-Pesa code ' . $mpesa . ' entered at checkout — verify and mark as Processing.' : 'Awaiting M-Pesa payment (paybill).' );
-		wc_reduce_stock_levels( $order->get_id() );
+		$order_id = $order->get_id();
+		if ( $pay_cod ) {
+			// Pay on delivery / at the shop: the order goes straight to work.
+			$order->update_status( 'processing', ( $is_pickup ? 'Customer will pay at the shop.' : 'Customer will pay on delivery.' ) );
+		} else {
+			// M-Pesa: "Pending payment" until the shop confirms the payment. WooCommerce
+			// does not email or reserve stock for pending orders by itself, so do it here.
+			$order->update_status( 'pending', $mpesa ? 'M-Pesa code ' . $mpesa . ' entered at checkout — verify it, then mark the order Processing.' : 'Awaiting M-Pesa payment (paybill).' );
+			$mailer = WC()->mailer()->get_emails();
+			if ( isset( $mailer['WC_Email_New_Order'] ) ) {
+				$mailer['WC_Email_New_Order']->trigger( $order_id, wc_get_order( $order_id ) );
+			}
+			if ( $email && isset( $mailer['WC_Email_Customer_On_Hold_Order'] ) ) {
+				// "We have received your order" email with the paybill instructions.
+				$mailer['WC_Email_Customer_On_Hold_Order']->trigger( $order_id, wc_get_order( $order_id ) );
+			}
+		}
+		self::reserve_stock( wc_get_order( $order_id ) );
 
 		return self::to_api( wc_get_order( $order->get_id() ) );
+	}
+
+	/**
+	 * Takes the ordered items out of stock now, whatever the status. (WooCommerce skips
+	 * "Pending payment" orders, which would let the last item be sold twice.) Recorded
+	 * the WooCommerce way, so cancelling or refunding the order puts the stock back.
+	 */
+	public static function reserve_stock( $order ) {
+		if ( ! $order || 'yes' !== get_option( 'woocommerce_manage_stock' ) || $order->get_data_store()->get_stock_reduced( $order->get_id() ) ) {
+			return;
+		}
+		$changes = array();
+		foreach ( $order->get_items() as $item ) {
+			$product = $item->get_product();
+			if ( ! $product || ! $product->managing_stock() || $item->get_meta( '_reduced_stock', true ) ) {
+				continue;
+			}
+			$qty = (int) $item->get_quantity();
+			$new = wc_update_product_stock( $product, $qty, 'decrease' );
+			if ( is_wp_error( $new ) ) {
+				continue;
+			}
+			$item->add_meta_data( '_reduced_stock', $qty, true );
+			$item->save();
+			$changes[] = $product->get_formatted_name() . ' ' . ( $new + $qty ) . '→' . $new;
+		}
+		$order->get_data_store()->set_stock_reduced( $order->get_id(), true );
+		if ( $changes ) {
+			$order->add_order_note( 'Stock reserved: ' . implode( ', ', $changes ) );
+		}
 	}
 
 	public static function clean_attribution( $input ) {
@@ -362,7 +395,9 @@ class VC_Orders {
 		}
 		$coupons = $order->get_coupon_codes();
 		$status  = $order->get_status();
-		$paid    = in_array( $status, array( 'processing', 'completed' ), true );
+		$is_cod  = 'cod' === $order->get_payment_method();
+		// Paid = completed, or an M-Pesa order the shop has confirmed (Processing).
+		$paid    = 'completed' === $status || ( ! $is_cod && 'processing' === $status );
 		$pickup  = 'pickup' === $order->get_meta( '_vc_fulfillment' );
 		return array(
 			'id'              => (string) $order->get_id(),
@@ -390,6 +425,7 @@ class VC_Orders {
 			),
 			'notes'           => $pickup ? trim( 'Pickup requested at Vibecraft location. ' . $order->get_customer_note() ) : $order->get_customer_note(),
 			'mpesaCode'       => $order->get_meta( '_vc_mpesa_code' ) ?: null,
+			'paymentMethod'   => $is_cod ? 'cod' : 'mpesa',
 			'paymentVerified' => $paid,
 			'items'           => $items,
 			'createdAt'       => $order->get_date_created() ? $order->get_date_created()->date( DATE_ATOM ) : null,
@@ -420,7 +456,8 @@ class VC_Orders {
 	public static function admin_details( $order ) {
 		$rows = array(
 			'Fulfilment'       => 'pickup' === $order->get_meta( '_vc_fulfillment' ) ? 'Pickup at store' : 'Delivery',
-			'M-Pesa code'      => $order->get_meta( '_vc_mpesa_code' ) ?: '— not entered —',
+			'Payment'          => $order->get_payment_method_title(),
+			'M-Pesa code'      => 'cod' === $order->get_payment_method() ? '' : ( $order->get_meta( '_vc_mpesa_code' ) ?: '— not entered —' ),
 			'Preferred date'   => $order->get_meta( '_vc_preferred_date' ),
 			'Preferred time'   => $order->get_meta( '_vc_preferred_time' ),
 		);
@@ -435,7 +472,7 @@ class VC_Orders {
 				echo '<p><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $value ) . '</p>';
 			}
 		}
-		echo '<p class="description">Once the M-Pesa payment is confirmed, change the status to <strong>Processing</strong>.</p></div>';
+		echo '<p class="description">' . ( 'cod' === $order->get_payment_method() ? 'Collect payment on delivery/pickup, then mark the order <strong>Completed</strong>.' : 'Once the M-Pesa payment is confirmed, change the status to <strong>Processing</strong>.' ) . '</p></div>';
 	}
 
 	public static function add_column( $columns ) {
@@ -443,7 +480,7 @@ class VC_Orders {
 		foreach ( $columns as $key => $label ) {
 			$new[ $key ] = $label;
 			if ( 'order_status' === $key ) {
-				$new['vc_mpesa'] = 'M-Pesa code';
+				$new['vc_mpesa'] = 'Payment / M-Pesa code';
 			}
 		}
 		return $new;
@@ -454,6 +491,10 @@ class VC_Orders {
 			return;
 		}
 		$order = $order instanceof WC_Order ? $order : wc_get_order( $order );
+		if ( $order && 'cod' === $order->get_payment_method() ) {
+			echo esc_html( $order->get_payment_method_title() );
+			return;
+		}
 		echo esc_html( $order ? ( $order->get_meta( '_vc_mpesa_code' ) ?: '—' ) : '—' );
 	}
 }

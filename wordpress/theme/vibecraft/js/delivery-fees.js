@@ -17,6 +17,7 @@
   var fees = {};
   var availability = {};
   var freeDeliveryMinimum = 0;
+  var paymentOptions = null; // { payOnDelivery, payAtShop, codCounties } when the store offers a choice
   Object.keys(feeBands).forEach(function (amount) {
     feeBands[amount].forEach(function (county) {
       fees[county] = Number(amount);
@@ -29,6 +30,7 @@
       if (settings.deliveryFees) fees = settings.deliveryFees;
       if (settings.deliveryAvailability) availability = settings.deliveryAvailability;
       freeDeliveryMinimum = Number(settings.freeDeliveryMinimum || 0);
+      paymentOptions = settings.paymentOptions || null;
       window.dispatchEvent(new Event("vibecraft:delivery-settings"));
     }).catch(function () {});
   }
@@ -41,5 +43,6 @@
       return Object.keys(fees).filter(function (county) { return availability[county] !== false; });
     },
     getFreeDeliveryMinimum: function () { return freeDeliveryMinimum; },
+    getPaymentOptions: function () { return paymentOptions; },
   };
 })();

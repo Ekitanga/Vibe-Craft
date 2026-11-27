@@ -291,6 +291,16 @@ class VC_Theme {
 			$html = self::replace_first( '/<title>[^<]*<\/title>/i', '<title>' . esc_html( $args['title'] ) . '</title>', $html );
 		}
 		$is_page_with_preview = ! empty( $args['product'] ) || is_front_page() || is_page( array( 'about', 'contact', 'shop' ) );
+		// Cart, checkout, receipts, sign-in and account pages stay out of search results.
+		if ( is_page( array( 'cart', 'checkout', 'login', 'signup', 'account' ) ) || ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url() ) ) {
+			$html = self::replace_first( '/<\/head>/i', '    <meta name="robots" content="noindex, follow" />' . "
+  </head>", $html );
+		}
+		// The home page's large images come from images.unsplash.com: connect early.
+		if ( is_front_page() || is_page( array( 'about', 'contact', 'shop' ) ) ) {
+			$html = self::replace_first( '/<\/head>/i', '    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />' . "
+  </head>", $html );
+		}
 		if ( ! empty( $args['product'] ) ) {
 			$html = preg_replace( '/\s*<meta name="description" content="[^"]*"\s*\/?>/i', '', $html, 1 );
 		}

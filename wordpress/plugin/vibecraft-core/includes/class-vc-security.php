@@ -47,15 +47,39 @@ class VC_Security {
 			return 'users' === $name ? false : $provider;
 		}, 10, 2 );
 		// Generic login errors (no "unknown username" hints).
-		add_filter( 'login_errors', function () {
-			return 'Incorrect sign-in details.';
+		add_filter( 'login_errors', function ( $message ) {
+			return false !== strpos( (string) $message, 'Too many failed' ) ? $message : 'Incorrect sign-in details.';
 		} );
 
 		add_action( 'send_headers', array( __CLASS__, 'headers' ) );
 
+		// Admin sign-in: lock for 15 minutes after repeated wrong passwords
+		// (per account, and per connection across accounts).
+		add_filter( 'authenticate', array( __CLASS__, 'login_gate' ), 30, 3 );
+		add_action( 'wp_login_failed', array( __CLASS__, 'login_failed' ) );
+		add_action( 'wp_login', function ( $login ) {
+			VC_Limits::reset( 'wp-login-user', strtolower( $login ) );
+		} );
+
 		// A fresh REST nonce for the storefront scripts (pages may be served from a cache).
 		add_action( 'wp_ajax_vc_nonce', array( __CLASS__, 'nonce' ) );
 		add_action( 'wp_ajax_nopriv_vc_nonce', array( __CLASS__, 'nonce' ) );
+	}
+
+	public static function login_gate( $user, $username, $password ) {
+		if ( '' === (string) $username ) {
+			return $user;
+		}
+		$limit = max( 3, (int) VC_Settings::get_private( 'loginAttempts' ) );
+		if ( VC_Limits::count( 'wp-login-user', strtolower( $username ) ) >= $limit || VC_Limits::count( 'wp-login-ip', VC_Limits::client_ip() ) >= $limit * 3 ) {
+			return new WP_Error( 'vc_locked', 'Too many failed sign-in attempts. Try again in 15 minutes.' );
+		}
+		return $user;
+	}
+
+	public static function login_failed( $username ) {
+		VC_Limits::hit( 'wp-login-user', strtolower( (string) $username ), PHP_INT_MAX, 15 * MINUTE_IN_SECONDS );
+		VC_Limits::hit( 'wp-login-ip', VC_Limits::client_ip(), PHP_INT_MAX, 15 * MINUTE_IN_SECONDS );
 	}
 
 	public static function headers() {

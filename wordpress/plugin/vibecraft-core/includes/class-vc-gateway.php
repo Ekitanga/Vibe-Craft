@@ -42,8 +42,8 @@ class VC_Gateway_Mpesa_Paybill extends WC_Payment_Gateway {
 		if ( $code ) {
 			$order->update_meta_data( '_vc_mpesa_code', substr( $code, 0, 12 ) );
 		}
-		$order->update_status( 'on-hold', 'Awaiting M-Pesa payment confirmation.' );
-		wc_reduce_stock_levels( $order_id );
+		$order->update_status( 'pending', 'Awaiting M-Pesa payment confirmation.' );
+		VC_Orders::reserve_stock( $order );
 		WC()->cart->empty_cart();
 		return array( 'result' => 'success', 'redirect' => $this->get_return_url( $order ) );
 	}

@@ -65,6 +65,16 @@ class VC_Setup {
 		update_option( 'woocommerce_allowed_countries', 'specific' );
 		update_option( 'woocommerce_specific_allowed_countries', array( 'KE' ) );
 		update_option( 'woocommerce_coming_soon', 'no' );
+		update_option( 'timezone_string', 'Africa/Nairobi' );
+		update_option( 'woocommerce_store_city', 'Nairobi' );
+		update_option( 'woocommerce_show_marketplace_suggestions', 'no' );
+		update_option( 'woocommerce_allow_tracking', 'no' );
+		// "Pay on delivery" / "Pay at the shop" use WooCommerce's cash-on-delivery method.
+		$cod                 = (array) get_option( 'woocommerce_cod_settings', array() );
+		$cod['enabled']      = 'yes';
+		$cod['title']        = 'Pay on delivery';
+		$cod['description']  = 'Pay in cash or M-Pesa when your order arrives.';
+		update_option( 'woocommerce_cod_settings', $cod );
 
 		// Clean addresses: /products/<slug> and /category/<slug>.
 		// No trailing slash, matching the previous site's addresses (/cart, /products/x).

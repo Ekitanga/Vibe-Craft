@@ -117,7 +117,8 @@
                 <option value="pickup">Pick up at our location</option>
               </select>
               <div class="checkout-pickup-card">
-                <p class="checkout-pickup-note"><strong>Pickup location:</strong> Nairobi CBD · Tom Mboya Street, opposite Imenti House · Rasumal House, 4th floor, Shop 14 — Dlight Gift Shop / Heltz Driving School building.</p>
+                <p class="checkout-pickup-note"><strong>Pickup location:</strong> Nairobi CBD · Tom Mboya Street, opposite Imenti House · <span data-setting="address">Rasumal House, 4th floor, Shop 14</span> — Dlight Gift Shop / Heltz Driving School building.</p>
+                <p class="checkout-pickup-note"><strong>Opening hours:</strong> <span data-setting="openingHours">Monday to Saturday: 8:00 AM – 7:00 PM</span></p>
               </div>
 
               <h3 class="checkout-section-heading">Delivery details</h3>
@@ -157,11 +158,23 @@
                 <textarea id="checkoutNotes"></textarea>
               </div>
 
-              <h3 class="checkout-section-heading">Pay via M-Pesa</h3>
-              <p class="checkout-payment-details">Paybill: <strong id="checkoutPaybill">522533</strong> &middot; Account: <strong id="checkoutMpesaAccount">8055906</strong></p>
-              <div class="field">
-                <label for="checkoutMpesaCode">M-Pesa transaction code <small>(optional — you can also send it via WhatsApp after paying)</small></label>
-                <input id="checkoutMpesaCode" placeholder="e.g. QGH7XXXXXX" />
+              <h3 class="checkout-section-heading" id="checkoutPaymentHeading">Pay via M-Pesa</h3>
+              <div class="checkout-method-switch" role="group" aria-label="Payment method" id="checkoutPaymentSwitch" hidden>
+                <button class="checkout-method-card is-active" type="button" data-payment-option="mpesa" aria-pressed="true">
+                  <span class="checkout-method-icon" aria-hidden="true">📱</span>
+                  <span class="checkout-method-copy"><strong>Pay now via M-Pesa</strong><small>Paybill — we confirm, then dispatch</small></span>
+                </button>
+                <button class="checkout-method-card" type="button" data-payment-option="cod" aria-pressed="false">
+                  <span class="checkout-method-icon" aria-hidden="true">💵</span>
+                  <span class="checkout-method-copy"><strong id="checkoutCodTitle">Pay on delivery</strong><small id="checkoutCodNote">Cash or M-Pesa to the rider</small></span>
+                </button>
+              </div>
+              <div id="checkoutMpesaPanel">
+                <p class="checkout-payment-details">Paybill: <strong id="checkoutPaybill">522533</strong> &middot; Account: <strong id="checkoutMpesaAccount">8055906</strong></p>
+                <div class="field">
+                  <label for="checkoutMpesaCode">M-Pesa transaction code <small>(optional — you can also send it via WhatsApp after paying)</small></label>
+                  <input id="checkoutMpesaCode" placeholder="e.g. QGH7XXXXXX" />
+                </div>
               </div>
 
               <div class="field checkout-promotion-field">
