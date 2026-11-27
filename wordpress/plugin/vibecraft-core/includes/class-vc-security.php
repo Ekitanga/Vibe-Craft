@@ -48,7 +48,31 @@ class VC_Security {
 		}, 10, 2 );
 		// Generic login errors (no "unknown username" hints).
 		add_filter( 'login_errors', function ( $message ) {
-			return false !== strpos( (string) $message, 'Too many failed' ) ? $message : 'Incorrect sign-in details.';
+			// Only wrong-username/password errors are made generic; others (lockout, cookies) stay readable.
+			return preg_match( '/Too many failed|[Cc]ookies/', (string) $message ) ? $message : 'Incorrect sign-in details.';
+		} );
+		// EasyWP's page cache drops cookies on the private login address (/kevo), so the
+		// browser never receives WordPress's "test cookie" and every sign-in would be refused.
+		// The test cookie is only a convenience check, not a security control: accept the form
+		// without it. The password, lockout and two-factor checks are unchanged.
+		add_action( 'login_init', function () {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing
+			if ( ! empty( $_POST['testcookie'] ) && empty( $_COOKIE[ TEST_COOKIE ] ) ) {
+				$_COOKIE[ TEST_COOKIE ] = 'WP Cookie check';
+			}
+		}, 1 );
+
+		// EasyWP's proxy only passes sign-in cookies on addresses containing "login", so the
+		// private login page lives at /kevo-login (WPS Hide Login) and /kevo just forwards there.
+		add_action( 'setup_theme', function () {
+			$slug = (string) get_option( 'whl_page' );
+			$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
+			if ( 'kevo' === $path && 'kevo' !== $slug && '' !== $slug ) {
+				$qs = (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY );
+				nocache_headers();
+				wp_redirect( home_url( '/' . $slug ) . ( $qs ? '?' . $qs : '' ), 302 );
+				exit;
+			}
 		} );
 
 		add_action( 'send_headers', array( __CLASS__, 'headers' ) );
