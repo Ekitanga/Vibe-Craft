@@ -25,10 +25,6 @@
     '<section class="shop-section showcase-collection section-shell" id="collection">',
     '  <div class="showcase-filters" id="showcaseFilters" role="tablist" aria-label="Filter products">',
     '    <button class="showcase-filter is-active" type="button" role="tab" aria-selected="true" data-filter="all">All</button>',
-    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="projectors">Projectors</button>',
-    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="screens">Screens</button>',
-    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="portable">Portable</button>',
-    '    <button class="showcase-filter" type="button" role="tab" aria-selected="false" data-filter="office">Office</button>',
     '  </div>',
     '  <div class="showcase-grid" id="shopCategories" aria-live="polite"><p class="shop-rail-status" role="status"><span class="loading-state"><span class="loading-dot" aria-hidden="true"></span><span>Loading products...</span></span></p></div>',
     '</section>',
@@ -37,7 +33,7 @@
     '  <div class="section-heading"><div><p class="eyebrow">Shop by room</p><h2>See it <em>there.</em></h2></div><p class="section-note">A better picture starts with the right space.</p></div>',
     '  <div class="room-grid">',
     '    <a class="room-tile room-tile-home" href="#collection" data-room-filter="portable"><span>MOVIE NIGHTS</span><strong>Your cinema. Your rules.</strong></a>',
-    '    <a class="room-tile room-tile-office" href="#collection" data-room-filter="office"><span>WORK &amp; LEARN</span><strong>Make every detail bigger.</strong></a>',
+    '    <a class="room-tile room-tile-office" href="#collection" data-room-filter="projectors"><span>WORK &amp; LEARN</span><strong>Make every detail bigger.</strong></a>',
     '    <a class="room-tile room-tile-outdoor" href="#collection" data-room-filter="all"><span>MATCH DAY</span><strong>Never miss the action.</strong></a>',
     '  </div>',
     '</section>',
@@ -53,7 +49,7 @@
     '      </video>',
     '      <span class="store-video-preview-overlay"><span class="store-video-play" aria-hidden="true">▶</span><span>Watch directions</span></span>',
     '    </button>',
-    '    <a class="store-map-button" href="https://www.google.com/maps/dir/?api=1&amp;destination=-1.2826763864005812%2C36.82444935619709" target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps" title="Open Google Maps"><img class="google-maps-icon" src="https://www.gstatic.com/images/branding/product/1x/maps_96dp.png" alt="" width="36" height="36" /></a>',
+    '    <a class="store-map-button" href="https://www.google.com/maps/dir/?api=1&amp;destination=-1.2826763864005812%2C36.82444935619709" target="_blank" rel="noopener noreferrer" aria-label="Get directions on Google Maps" title="Open Google Maps"><img class="google-maps-icon" src="https://www.gstatic.com/images/branding/product/1x/maps_96dp.png" alt="" width="36" height="36" /><span class="store-map-label">Get directions</span></a>',
     '  </div>',
     '</section>',
     '<dialog class="store-directions-dialog" id="storeDirectionsDialog" aria-labelledby="storeDirectionsTitle">',
@@ -109,7 +105,9 @@
   }
   var currencyFormatters = {};
   var activeFilter = "all";
-  var searchQuery = new URLSearchParams(window.location.search).get("search") || "";
+  var pageParams = new URLSearchParams(window.location.search);
+  var searchQuery = (pageParams.get("search") || "").trim().toLowerCase();
+  var requestedCategory = pageParams.get("category") || "";
   searchQuery = searchQuery.trim().toLowerCase();
   if (searchInput) searchInput.value = searchQuery;
   var fallbackProducts = [
@@ -193,7 +191,7 @@
       if (!searchQuery) return true;
       return [product.name, product.brand, product.categoryId, product.projectorType].join(" ").toLowerCase().indexOf(searchQuery) !== -1;
     });
-    gallery.innerHTML = visible.length ? visible.map(productMarkup).join("") : '<p class="shop-rail-status">No products found for &ldquo;' + escapeHtml(searchQuery) + '&rdquo;.</p>';
+    gallery.innerHTML = visible.length ? visible.map(productMarkup).join("") : '<p class="shop-rail-status">' + (searchQuery ? 'No products found for &ldquo;' + escapeHtml(searchQuery) + '&rdquo;.' : 'No products in this category yet.') + '</p>';
     if (searchStatus) searchStatus.textContent = searchQuery ? visible.length + " result" + (visible.length === 1 ? "" : "s") + " found" : "Search the collection by name or type.";
   }
 
@@ -356,12 +354,51 @@
     });
   }
 
-  window.VibecraftApi.get("products").then(function (payload) {
-    products = (payload && payload.data) || fallbackProducts;
-    if (!products.length) products = fallbackProducts;
-    renderGallery("all");
+  // Filter chips follow the shop's real categories (only those with products).
+  function renderFilterChips(categories) {
+    var chips = categories.filter(function (category) {
+      return products.some(function (product) { return productMatches(product, category.id); });
+    });
+    filters.innerHTML = ['<button class="showcase-filter" type="button" role="tab" data-filter="all">All</button>'].concat(chips.map(function (category) {
+      return '<button class="showcase-filter" type="button" role="tab" data-filter="' + escapeHtml(category.id) + '">' + escapeHtml(category.name) + '</button>';
+    })).join("");
+  }
+
+  function scrollToCollection() {
+    var collection = document.getElementById("collection");
+    if (collection) collection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Used by the side menu.
+  window.VibecraftShowcase = {
+    showCategory: function (id) {
+      searchQuery = "";
+      if (searchInput) searchInput.value = "";
+      selectFilter(id || "all");
+      scrollToCollection();
+    },
+    search: function (query) {
+      searchQuery = String(query || "").trim().toLowerCase();
+      if (searchInput) searchInput.value = query || "";
+      selectFilter("all");
+      scrollToCollection();
+    },
+  };
+
+  function start(productList, categories) {
+    products = productList && productList.length ? productList : fallbackProducts;
+    renderFilterChips(categories || []);
+    if (searchQuery && searchInput) searchInput.value = searchQuery;
+    selectFilter(requestedCategory || "all");
+    if (requestedCategory || searchQuery) window.setTimeout(scrollToCollection, 60);
+  }
+
+  Promise.all([
+    window.VibecraftApi.get("products"),
+    window.VibecraftApi.get("categories").catch(function () { return null; }),
+  ]).then(function (responses) {
+    start((responses[0] && responses[0].data) || [], (responses[1] && responses[1].data) || []);
   }).catch(function () {
-    products = fallbackProducts;
-    renderGallery("all");
+    start(fallbackProducts, []);
   });
 })();

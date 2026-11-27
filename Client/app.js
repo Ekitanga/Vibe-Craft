@@ -513,3 +513,162 @@
 
   renderCartWidgets();
 })();
+
+/* Mobile side menu: slides in from the left with search, product categories and contacts. */
+(function () {
+  "use strict";
+
+  var nav = document.getElementById("siteNav");
+  var toggle = document.getElementById("menuToggle");
+  if (!nav || !toggle || !window.VibecraftApi || nav.querySelector(".drawer-shop")) return;
+
+  var CACHE_KEY = "vibecraft_menu_categories_v1";
+  var ICONS = {
+    all: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+    projector: '<rect x="2.5" y="7" width="19" height="10" rx="3"/><circle cx="15.5" cy="12" r="2.6"/><path d="M6 12h3M6 19.5h2M16 19.5h2"/>',
+    screen: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20.5h7"/>',
+    stand: '<path d="M12 3v9M12 12l-6 9M12 12l6 9M12 12v9M9 3h6"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+    chevron: '<path d="m9 6 6 6-6 6"/>',
+  };
+
+  function svg(name, cls) {
+    return '<svg class="' + (cls || "drawer-icon") + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[name] + "</svg>";
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function iconFor(id) {
+    if (id === "all") return "all";
+    if (/screen/.test(id)) return "screen";
+    if (/stand|mount|tripod/.test(id)) return "stand";
+    return "projector";
+  }
+
+  // Same rule as the home page filter: "Projectors" covers every kind of projector.
+  function inCategory(product, id) {
+    var cat = String(product.categoryId || "").toLowerCase();
+    if (id === "all") return true;
+    if (id === "projectors") return /(^|-)projectors$/.test(cat);
+    return cat === id;
+  }
+
+  function isHome() {
+    return !!document.getElementById("showcaseFilters");
+  }
+
+  var brand = document.querySelector(".site-header .brand-image");
+  var shop = document.createElement("div");
+  shop.className = "drawer-shop drawer-only";
+  shop.innerHTML =
+    '<a class="drawer-brand" href="/" aria-label="Vibecraft254 home">' + (brand ? brand.innerHTML : "Vibecraft254") + "</a>" +
+    '<form class="drawer-search" role="search" action="/shop">' +
+    '<label class="sr-only" for="drawerSearchInput">Search products</label>' +
+    svg("search") +
+    '<input id="drawerSearchInput" name="search" type="search" placeholder="Search projectors, screens…" autocomplete="off" />' +
+    "</form>" +
+    '<p class="drawer-label">Shop by category</p>' +
+    '<ul class="drawer-cats" id="drawerCategories"><li class="drawer-cats-loading"><span class="loading-dot" aria-hidden="true"></span> Loading categories…</li></ul>' +
+    '<p class="drawer-label">Menu</p>';
+  var close = nav.querySelector(".nav-close");
+  nav.insertBefore(shop, close ? close.nextSibling : nav.firstChild);
+
+  // Extra menu rows (mobile only), placed after Contact.
+  var contactLink = nav.querySelector('a[href$="#contact"], a[href="/contact"]');
+  var extra = document.createElement("div");
+  extra.innerHTML =
+    '<a class="drawer-only drawer-ai-link" href="/find-your-setup">Vibe AI ✨</a>' +
+    '<a class="drawer-only" href="/#find-us">Visit our shop</a>';
+  var anchor = contactLink ? contactLink.nextSibling : null;
+  while (extra.firstChild) nav.insertBefore(extra.firstChild, anchor);
+
+  var foot = document.createElement("div");
+  foot.className = "drawer-foot drawer-only";
+  nav.appendChild(foot);
+
+  function renderFoot() {
+    var phone = document.getElementById("footerPhone");
+    var wa = document.getElementById("footerWhatsapp");
+    var waHref = wa ? wa.getAttribute("href") : "https://wa.me/254707472897";
+    var telHref = phone ? phone.getAttribute("href") : "";
+    foot.innerHTML =
+      '<a class="drawer-contact drawer-contact-wa" href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener noreferrer">WhatsApp us</a>' +
+      (telHref ? '<a class="drawer-contact" href="' + escapeHtml(telHref) + '">Call us</a>' : "");
+  }
+
+  function renderCategories(categories, products) {
+    var list = document.getElementById("drawerCategories");
+    var rows = [{ id: "all", name: "All products" }].concat(categories);
+    var html = rows
+      .map(function (category) {
+        var count = products.filter(function (p) { return inCategory(p, category.id); }).length;
+        if (!count) return "";
+        return (
+          '<li><a href="/shop?category=' + encodeURIComponent(category.id) + '" data-drawer-category="' + escapeHtml(category.id) + '">' +
+          '<span class="drawer-cat-icon">' + svg(iconFor(category.id)) + "</span>" +
+          '<span class="drawer-cat-name">' + escapeHtml(category.name) + "</span>" +
+          '<span class="drawer-cat-count">' + count + "</span>" +
+          svg("chevron", "drawer-chevron") +
+          "</a></li>"
+        );
+      })
+      .join("");
+    list.innerHTML = html || '<li class="drawer-cats-loading">No categories yet.</li>';
+  }
+
+  var loaded = false;
+  function loadCategories() {
+    if (loaded) return;
+    loaded = true;
+    try {
+      var cached = JSON.parse(window.sessionStorage.getItem(CACHE_KEY) || "null");
+      if (cached && Date.now() - cached.at < 10 * 60 * 1000) {
+        renderCategories(cached.categories, cached.products);
+        return;
+      }
+    } catch (_e) { /* no storage */ }
+    Promise.all([window.VibecraftApi.get("categories"), window.VibecraftApi.get("products")])
+      .then(function (res) {
+        var categories = (res[0] && res[0].data) || [];
+        var products = ((res[1] && res[1].data) || []).map(function (p) { return { categoryId: p.categoryId }; });
+        renderCategories(categories, products);
+        try { window.sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), categories: categories, products: products })); } catch (_e) { /* ignore */ }
+      })
+      .catch(function () {
+        loaded = false;
+        document.getElementById("drawerCategories").innerHTML = '<li><a href="/shop" data-drawer-category="all"><span class="drawer-cat-icon">' + svg("all") + '</span><span class="drawer-cat-name">All products</span>' + svg("chevron", "drawer-chevron") + "</a></li>";
+      });
+  }
+
+  function closeMenu() {
+    if (nav.classList.contains("is-open")) toggle.click();
+  }
+
+  toggle.addEventListener("click", function () {
+    if (nav.classList.contains("is-open")) {
+      renderFoot();
+      loadCategories();
+    }
+  });
+  toggle.addEventListener("touchstart", loadCategories, { once: true, passive: true });
+
+  nav.addEventListener("click", function (event) {
+    var link = event.target.closest("[data-drawer-category]");
+    if (!link || !isHome() || !window.VibecraftShowcase) return;
+    event.preventDefault();
+    closeMenu();
+    window.VibecraftShowcase.showCategory(link.getAttribute("data-drawer-category"));
+  });
+
+  shop.querySelector(".drawer-search").addEventListener("submit", function (event) {
+    var query = this.querySelector("input").value.trim();
+    if (!isHome() || !window.VibecraftShowcase) return; // other pages: normal submit to /shop?search=…
+    event.preventDefault();
+    closeMenu();
+    window.VibecraftShowcase.search(query);
+  });
+})();
