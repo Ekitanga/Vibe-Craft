@@ -100,6 +100,7 @@ class VC_Admin {
 			self::text_row( 'aiMessagesPer5Min', 'Vibe AI messages per 5 minutes per connection', (string) $p['aiMessagesPer5Min'], 'number', 'Protects your Gemini quota.' );
 			self::text_row( 'loginAttempts', 'Wrong passwords before a 15-minute lock', (string) $p['loginAttempts'], 'number' );
 			self::text_row( 'signupsPerHourPerIp', 'New accounts per hour per connection', (string) $p['signupsPerHourPerIp'], 'number' );
+			self::text_row( 'unpaidOrderExpiryHours', 'Cancel unpaid orders after (hours)', (string) $p['unpaidOrderExpiryHours'], 'number', 'Orders still On hold with no M-Pesa code are cancelled and their stock returned. Orders where the customer entered a code are never cancelled automatically. 0 = never.' );
 		}
 		echo '</tbody></table>';
 		submit_button( 'Save' );
@@ -157,7 +158,7 @@ class VC_Admin {
 			VC_Settings::update_private( $values );
 		} elseif ( 'security' === $tab ) {
 			$values = array();
-			foreach ( array( 'ordersPerHourPerIp', 'pendingOrdersPerPhone', 'aiMessagesPer5Min', 'loginAttempts', 'signupsPerHourPerIp' ) as $key ) {
+			foreach ( array( 'ordersPerHourPerIp', 'pendingOrdersPerPhone', 'aiMessagesPer5Min', 'loginAttempts', 'signupsPerHourPerIp', 'unpaidOrderExpiryHours' ) as $key ) {
 				$values[ $key ] = max( 0, (int) ( $in[ $key ] ?? 0 ) );
 			}
 			VC_Settings::update_private( $values );

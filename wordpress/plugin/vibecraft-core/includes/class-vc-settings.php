@@ -74,6 +74,7 @@ class VC_Settings {
 			'aiMessagesPer5Min'     => 20,
 			'loginAttempts'         => 8,
 			'signupsPerHourPerIp'   => 10,
+			'unpaidOrderExpiryHours' => 48,
 		);
 	}
 

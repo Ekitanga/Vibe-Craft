@@ -16,6 +16,60 @@ class VC_Orders {
 		add_filter( 'manage_edit-shop_order_columns', array( __CLASS__, 'add_column' ) );
 		add_action( 'manage_woocommerce_page_wc-orders_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
 		add_action( 'manage_shop_order_posts_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
+		// Paybill instructions in the customer's "order received" email.
+		add_action( 'woocommerce_email_before_order_table', array( __CLASS__, 'email_instructions' ), 10, 4 );
+		// Unpaid storefront orders are cancelled after a while (stock goes back on sale).
+		add_action( 'vc_expire_unpaid_orders', array( __CLASS__, 'expire_unpaid' ) );
+		add_action( 'init', function () {
+			if ( ! wp_next_scheduled( 'vc_expire_unpaid_orders' ) ) {
+				wp_schedule_event( time() + 600, 'hourly', 'vc_expire_unpaid_orders' );
+			}
+		} );
+	}
+
+	public static function email_instructions( $order, $sent_to_admin, $plain_text, $email = null ) {
+		if ( $sent_to_admin || ! $order instanceof WC_Order || 'vc_mpesa_paybill' !== $order->get_payment_method() || ! $order->has_status( 'on-hold' ) ) {
+			return;
+		}
+		$settings = VC_Settings::get();
+		$code     = $order->get_meta( '_vc_mpesa_code' );
+		$lines    = $code
+			? array( 'We received your M-Pesa code ' . $code . ' and will confirm your payment shortly.' )
+			: array(
+				'To complete your order, pay KES ' . number_format( (float) $order->get_total() ) . ' via M-Pesa:',
+				'Paybill: ' . $settings['paybill'] . '   Account: ' . $settings['mpesaAccount'],
+				'Then reply with the M-Pesa code or send it on WhatsApp ' . $settings['whatsapp'] . '.',
+			);
+		if ( $plain_text ) {
+			echo esc_html( implode( "\n", $lines ) ) . "\n\n";
+			return;
+		}
+		echo '<div style="margin:0 0 24px;padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px">';
+		foreach ( $lines as $line ) {
+			echo '<p style="margin:0 0 6px">' . esc_html( $line ) . '</p>';
+		}
+		echo '</div>';
+	}
+
+	/** Storefront orders still on hold with no M-Pesa code after N hours are cancelled. */
+	public static function expire_unpaid() {
+		$hours = (int) VC_Settings::get_private( 'unpaidOrderExpiryHours' );
+		if ( $hours <= 0 ) {
+			return;
+		}
+		$orders = wc_get_orders( array(
+			'status'       => array( 'on-hold', 'pending' ),
+			'created_via'  => 'vibecraft-storefront',
+			'date_created' => '<' . ( time() - $hours * HOUR_IN_SECONDS ),
+			'limit'        => 50,
+		) );
+		foreach ( $orders as $order ) {
+			if ( $order->get_meta( '_vc_mpesa_code' ) ) {
+				continue; // the customer says they paid: a person checks these
+			}
+			// Cancelling restores the reserved stock (WooCommerce).
+			$order->update_status( 'cancelled', 'Cancelled automatically: no M-Pesa payment within ' . $hours . ' hours.' );
+		}
 	}
 
 	private static function fail( $message, $status = 400 ) {
